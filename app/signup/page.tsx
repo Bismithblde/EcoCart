@@ -58,14 +58,23 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans px-4">
-      <main className="w-full max-w-md">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans">
+      <header className="border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+        <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-16">
+          <Link href="/" className="text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
             EcoCart
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
+          </Link>
+        </nav>
+      </header>
+
+      <div className="flex flex-col items-center justify-center flex-1 px-4 py-12">
+      <main className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Create your account
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Join EcoCart and start making sustainable choices
           </p>
         </div>
 
@@ -174,6 +183,7 @@ export default function SignupPage() {
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (data.session) {
+    if (data.session && data.user) {
       return NextResponse.json({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-      },
+      user:
+        data.user != null
+          ? { id: data.user.id, email: data.user.email }
+          : null,
       message:
         "Account created. Please check your email to confirm your account before signing in.",
     });

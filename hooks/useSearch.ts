@@ -1,19 +1,23 @@
 import { useState, useCallback } from 'react';
 
 export interface SearchResult {
-  ean: string;
-  title: string;
-  description?: string;
-  brand?: string;
-  category?: string;
-  images?: string[];
+  code: string;
+  product_name: string;
+  brands?: string;
+  categories?: string;
+  ecoscore_grade?: string;
+  ecoscore_score?: number;
+  nutriscore_grade?: string;
+  nutriscore_score?: number;
+  image_url?: string;
+  image_small_url?: string;
 }
 
 export interface SearchResponse {
-  items: SearchResult[];
-  code: string;
-  offset: number;
-  total: number;
+  products: SearchResult[];
+  count: number;
+  page: number;
+  page_size: number;
 }
 
 export function useSearch() {
@@ -22,8 +26,11 @@ export function useSearch() {
   const [error, setError] = useState<string | null>(null);
 
   const search = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setError('Please enter a search term');
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      setError('Please enter a product name');
+      setResults([]);
       return;
     }
 
@@ -33,7 +40,7 @@ export function useSearch() {
 
     try {
       const response = await fetch(
-        `/api/search?q=${encodeURIComponent(query)}`,
+        `/api/search?q=${encodeURIComponent(trimmedQuery)}`,
         {
           method: 'GET',
           headers: {
@@ -43,19 +50,29 @@ export function useSearch() {
       );
 
       if (!response.ok) {
-        throw new Error(`Search failed with status ${response.status}`);
+        if (response.status === 400) {
+          throw new Error('Invalid search query');
+        } else if (response.status === 502) {
+          throw new Error('Search service is temporarily unavailable');
+        } else {
+          throw new Error(`Search failed with status ${response.status}`);
+        }
       }
 
       const data: SearchResponse = await response.json();
-      setResults(data.items || []);
 
-      if (!data.items || data.items.length === 0) {
-        setError('No products found. Try a different search term.');
+      if (data.products && data.products.length > 0) {
+        setResults(data.products);
+        setError(null);
+      } else {
+        setResults([]);
+        setError(`No products found for "${trimmedQuery}". Try searching for a different product name.`);
       }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to search products';
       setError(errorMessage);
+      setResults([]);
       console.error('[useSearch]', err);
     } finally {
       setIsLoading(false);

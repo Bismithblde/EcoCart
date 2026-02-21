@@ -20,7 +20,7 @@ export default function Home() {
 
   const handleAnalyzeSustainability = async () => {
     if (selectedProduct) {
-      await analyze(selectedProduct.title, selectedProduct.brand);
+      await analyze(selectedProduct.product_name, selectedProduct.brands);
     }
   };
 
@@ -80,13 +80,13 @@ export default function Home() {
                     key={index}
                     onClick={() => setSelectedProduct(item)}
                     className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                      selectedProduct?.title === item.title
+                      selectedProduct?.product_name === item.product_name
                         ? 'bg-green-100 dark:bg-green-900/30 border-green-500'
                         : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-green-400'
                     }`}
                   >
-                    <p className="font-semibold text-gray-900 dark:text-white">{item.title}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.brand || 'No brand'}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{item.product_name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.brands || 'No brand'}</p>
                   </button>
                 ))}
               </div>
@@ -97,10 +97,10 @@ export default function Home() {
             <div className="mt-8 space-y-4">
               <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  {selectedProduct.title}
+                  {selectedProduct.product_name}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Brand: {selectedProduct.brand || 'Unknown'} | EAN: {selectedProduct.ean || 'N/A'}
+                  Brand: {selectedProduct.brands || 'Unknown'} | Barcode: {selectedProduct.code || 'N/A'}
                 </p>
                 <button
                   onClick={handleAnalyzeSustainability}

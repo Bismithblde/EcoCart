@@ -1,6 +1,6 @@
 'use client';
 
-import { Leaf, TrendingDown, ArrowRight } from 'lucide-react';
+import { Wand2, TrendingDown, ArrowRight, Sparkles } from 'lucide-react';
 
 interface BetterChoiceCardProps {
   originalProduct: string;
@@ -12,54 +12,50 @@ interface BetterChoiceCardProps {
   onViewProduct?: () => void;
 }
 
-const ImpactBadge: React.FC<{ type: string; value: string }> = ({ type, value }) => {
+const TransmutationBadge: React.FC<{ type: string; value: string }> = ({ type, value }) => {
   const typeConfig = {
     co2: {
-      bg: 'bg-emerald-50 dark:bg-emerald-900/30',
-      border: 'border-emerald-200 dark:border-emerald-700',
-      text: 'text-emerald-700 dark:text-emerald-300',
+      bg: 'bg-purple-950/40 border-purple-500/50',
+      text: 'text-purple-200',
       icon: '💨',
-      label: 'CO₂ Saved',
+      label: 'CO₂ Reduction',
     },
     water: {
-      bg: 'bg-blue-50 dark:bg-blue-900/30',
-      border: 'border-blue-200 dark:border-blue-700',
-      text: 'text-blue-700 dark:text-blue-300',
+      bg: 'bg-blue-950/40 border-blue-500/50',
+      text: 'text-blue-200',
       icon: '💧',
       label: 'Water Saved',
     },
     plastic: {
-      bg: 'bg-lime-50 dark:bg-lime-900/30',
-      border: 'border-lime-200 dark:border-lime-700',
-      text: 'text-lime-700 dark:text-lime-300',
-      icon: '♻️',
-      label: 'Plastic Reduced',
+      bg: 'bg-emerald-950/40 border-emerald-500/50',
+      text: 'text-emerald-200',
+      icon: '🪴',
+      label: 'Plastic Reduction',
     },
     waste: {
-      bg: 'bg-stone-50 dark:bg-stone-900/30',
-      border: 'border-stone-200 dark:border-stone-700',
-      text: 'text-stone-700 dark:text-stone-300',
-      icon: '🌍',
-      label: 'Waste Reduced',
+      bg: 'bg-amber-950/40 border-amber-500/50',
+      text: 'text-amber-200',
+      icon: '✨',
+      label: 'Waste Reduction',
     },
   };
 
   const config = typeConfig[type as keyof typeof typeConfig];
 
   return (
-    <div className={`border rounded-lg p-4 ${config.bg} ${config.border}`}>
+    <div className={`border-2 rounded-lg p-4 ${config.bg} ${config.text} border-opacity-50`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className={`text-sm font-medium opacity-75 ${config.text}`}>{config.label}</p>
-          <p className={`text-2xl font-bold ${config.text}`}>{value}</p>
+          <p className="text-sm font-semibold uppercase tracking-widest opacity-75">{config.label}</p>
+          <p className="text-3xl font-serif font-bold">{value}</p>
         </div>
-        <p className="text-3xl">{config.icon}</p>
+        <p className="text-4xl">{config.icon}</p>
       </div>
     </div>
   );
 };
 
-const ProductComparison: React.FC<{
+const AlchemicalComparison: React.FC<{
   original: string;
   originalScore: number;
   alternative: string;
@@ -69,38 +65,38 @@ const ProductComparison: React.FC<{
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      {/* Original Product */}
-      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
-        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Current Product</p>
-        <p className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{original}</p>
+      {/* Current Product */}
+      <div className="bg-gradient-to-br from-red-950/60 to-red-900/40 rounded-lg p-6 border-2 border-red-600/40">
+        <p className="text-xs font-semibold text-red-300 uppercase tracking-widest mb-2">Current Product</p>
+        <p className="text-lg font-serif font-semibold text-red-100 mb-4">{original}</p>
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-gray-300 dark:bg-gray-600 rounded-full h-2">
+          <div className="flex-1 bg-red-950 rounded-full h-3 border border-red-700/50">
             <div
-              className="bg-orange-500 h-2 rounded-full"
+              className="bg-red-600 h-3 rounded-full shadow-lg shadow-red-600/50"
               style={{ width: `${originalScore}%` }}
             />
           </div>
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 w-10">{originalScore}</p>
+          <p className="text-sm font-serif font-bold text-red-200 w-10">{originalScore}</p>
         </div>
       </div>
 
-      {/* Alternative Product */}
-      <div className="bg-emerald-50 dark:bg-emerald-900/30 rounded-lg p-6 border border-emerald-200 dark:border-emerald-700">
-        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400 mb-2">✨ Better Choice</p>
-        <p className="text-lg font-semibold text-emerald-900 dark:text-emerald-100 mb-4">{alternative}</p>
+      {/* Better Alternative */}
+      <div className="bg-gradient-to-br from-emerald-950/60 to-emerald-900/40 rounded-lg p-6 border-2 border-emerald-500/40">
+        <p className="text-xs font-semibold text-emerald-300 uppercase tracking-widest mb-2">Better Alternative</p>
+        <p className="text-lg font-serif font-semibold text-emerald-100 mb-4">{alternative}</p>
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-emerald-300 dark:bg-emerald-600 rounded-full h-2">
+          <div className="flex-1 bg-emerald-950 rounded-full h-3 border border-emerald-700/50">
             <div
-              className="bg-emerald-600 dark:bg-emerald-400 h-2 rounded-full"
+              className="bg-emerald-500 h-3 rounded-full shadow-lg shadow-emerald-500/50"
               style={{ width: `${alternativeScore}%` }}
             />
           </div>
-          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 w-10">{alternativeScore}</p>
+          <p className="text-sm font-serif font-bold text-emerald-200 w-10">{alternativeScore}</p>
         </div>
         {scoreDiff > 0 && (
-          <div className="flex items-center gap-1 mt-3 text-emerald-700 dark:text-emerald-300">
+          <div className="flex items-center gap-1 mt-3 text-emerald-300">
             <TrendingDown className="w-4 h-4" />
-            <p className="text-xs font-medium">+{scoreDiff} points better</p>
+            <p className="text-xs font-semibold">+{scoreDiff} points more sustainable</p>
           </div>
         )}
       </div>
@@ -119,20 +115,20 @@ export default function BetterChoiceCard({
 }: BetterChoiceCardProps) {
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 md:p-10">
+      <div className="bg-gradient-to-br from-slate-900/90 via-purple-900/50 to-slate-900/90 border-2 border-amber-600/50 rounded-2xl shadow-2xl p-8 md:p-10 backdrop-blur-sm">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8 pb-6 border-b border-stone-200 dark:border-stone-700">
-          <div className="bg-lime-100 dark:bg-lime-900/30 p-3 rounded-lg">
-            <Leaf className="w-6 h-6 text-lime-600 dark:text-lime-400" />
+        <div className="flex items-center gap-3 mb-8 pb-6 border-b-2 border-purple-600/30">
+          <div className="bg-gradient-to-br from-amber-600 to-amber-700 p-3 rounded-lg">
+            <Wand2 className="w-6 h-6 text-amber-100" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-lime-600 dark:text-lime-400">Smart Swap</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">Find a Better Alternative</p>
+            <p className="text-xs font-semibold text-amber-400 uppercase tracking-widest">Smart Alternative</p>
+            <p className="text-lg font-serif font-bold text-amber-100">More Sustainable Option</p>
           </div>
         </div>
 
-        {/* Product Comparison */}
-        <ProductComparison
+        {/* Alchemical Comparison */}
+        <AlchemicalComparison
           original={originalProduct}
           originalScore={originalScore}
           alternative={alternativeProduct}
@@ -141,47 +137,47 @@ export default function BetterChoiceCard({
 
         {/* Impact Badge */}
         <div className="mb-8">
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Environmental Impact</p>
-          <ImpactBadge type={impactType} value={impactSaved} />
+          <p className="text-xs font-semibold text-amber-300 uppercase tracking-widest mb-4">Environmental Impact</p>
+          <TransmutationBadge type={impactType} value={impactSaved} />
         </div>
 
-        {/* Benefits List */}
-        <div className="bg-lime-50 dark:bg-lime-900/20 rounded-lg p-6 mb-8 border border-lime-200 dark:border-lime-800/50">
-          <p className="text-sm font-semibold text-lime-900 dark:text-lime-200 mb-4">Why This Swap Matters</p>
+        {/* Benefits - Why This Choice Matters */}
+        <div className="bg-gradient-to-br from-emerald-950/60 to-emerald-900/40 rounded-lg p-6 mb-8 border-2 border-emerald-500/40">
+          <p className="text-xs font-semibold text-emerald-300 uppercase tracking-widest mb-4">Why This Alternative</p>
           <ul className="space-y-3">
             <li className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-lime-600 flex items-center justify-center mt-0.5">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center mt-0.5 shadow-lg shadow-emerald-600/50">
                 <p className="text-xs text-white font-bold">✓</p>
               </div>
-              <p className="text-sm text-lime-900 dark:text-lime-100">Significantly lower environmental impact</p>
+              <p className="text-sm text-emerald-200">Significantly lower environmental impact</p>
             </li>
             <li className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-lime-600 flex items-center justify-center mt-0.5">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center mt-0.5 shadow-lg shadow-emerald-600/50">
                 <p className="text-xs text-white font-bold">✓</p>
               </div>
-              <p className="text-sm text-lime-900 dark:text-lime-100">Made from sustainable materials</p>
+              <p className="text-sm text-emerald-200">Made from sustainable or recycled materials</p>
             </li>
             <li className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-lime-600 flex items-center justify-center mt-0.5">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center mt-0.5 shadow-lg shadow-emerald-600/50">
                 <p className="text-xs text-white font-bold">✓</p>
               </div>
-              <p className="text-sm text-lime-900 dark:text-lime-100">Supports eco-conscious brands</p>
+              <p className="text-sm text-emerald-200">Supports eco-conscious and ethical brands</p>
             </li>
           </ul>
         </div>
 
-        {/* Action Button */}
+        {/* Call to Action Button */}
         <button
           onClick={onViewProduct}
-          className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+          className="w-full px-6 py-3 bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 active:from-emerald-800 active:to-emerald-700 text-amber-50 font-serif font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-emerald-600/50 flex items-center justify-center gap-2 uppercase text-sm tracking-wide"
         >
           View Product
           <ArrowRight className="w-4 h-4" />
         </button>
 
-        {/* Trust Badge */}
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-          Based on verified sustainability data from certified sources
+        {/* Verification Badge */}
+        <p className="text-xs text-purple-300/75 text-center mt-4 italic">
+          Verified by certified sustainability standards
         </p>
       </div>
     </div>

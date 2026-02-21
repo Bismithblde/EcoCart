@@ -161,6 +161,72 @@ function hasRealEggsOnlyIngredients(product: Record<string, unknown>): boolean {
 }
 
 /**
+ * Prioritize products so strict matches (product IS the searched item) rank above
+ * products that only contain the term as a secondary ingredient.
+ */
+export function prioritizeByStrictMatch(
+  products: Array<Record<string, unknown>>,
+  searchTerm: string
+): Array<Record<string, unknown>> {
+  const term = searchTerm.trim().toLowerCase();
+  const words = term.split(/\s+/).filter(Boolean);
+  const primaryTerm = words[words.length - 1] ?? term;
+
+  function score(p: Record<string, unknown>): number {
+    let s = 0;
+    const name = String(p.product_name ?? "").toLowerCase();
+    const categories = String(p.categories ?? "").toLowerCase();
+    const catTags = Array.isArray(p.categories_tags)
+      ? (p.categories_tags as string[]).join(" ").toLowerCase()
+      : "";
+    const ingredients = String(p.ingredients_text ?? "").trim();
+
+    const nameHasPrimary = name.includes(primaryTerm);
+    const catsHavePrimary =
+      categories.includes(primaryTerm) || catTags.includes(primaryTerm);
+    const ingredientsHavePrimary = ingredients.toLowerCase().includes(primaryTerm);
+    const ingredientsShort = ingredients.length > 0 && ingredients.length <= 60;
+
+    if (nameHasPrimary) {
+      if (name.startsWith(primaryTerm) || new RegExp(`\\b${primaryTerm}\\b`).test(name))
+        s += 80;
+      else s += 40;
+    }
+    if (catsHavePrimary) {
+      const firstCats = (categories + " " + catTags).slice(0, 80);
+      if (firstCats.includes(primaryTerm)) s += 50;
+      else s += 20;
+    }
+    if (ingredientsShort && ingredientsHavePrimary) s += 60;
+    else if (ingredients.length > 80 && ingredientsHavePrimary) s -= 40;
+
+    if (primaryTerm === "eggs") {
+      if (PROCESSED_INGREDIENT_PATTERNS.some((re) => re.test(ingredients))) s -= 70;
+      if (hasEggCategory(p) && ingredientsShort) s += 30;
+    }
+    if (primaryTerm === "gum") {
+      const isChewingGum =
+        /chewing gum|bubble gum|gum\s*$/i.test(name) ||
+        /chewing.gum|en:chewing-gums/i.test(categories + catTags);
+      if (isChewingGum) s += 90;
+      const gumOnlyInAdditives =
+        !nameHasPrimary &&
+        !isChewingGum &&
+        (/\bgum arabic|xanthan gum|guar gum|gellan gum|locust bean gum\b/i.test(
+          ingredients
+        ) ||
+          (Array.isArray(p.additives_tags) &&
+            (p.additives_tags as string[]).some((t) => t.includes("gum"))));
+      if (gumOnlyInAdditives) s -= 60;
+    }
+
+    return s;
+  }
+
+  return [...products].sort((a, b) => score(b) - score(a));
+}
+
+/**
  * Filter products to real eggs only (whole eggs, not mayo/cakes/processed).
  * Rules: categories must contain "Eggs" or "Chicken eggs"; optionally exclude by ingredients.
  */
@@ -237,25 +303,60 @@ export async function search(
   }
 
   const url = `${OFF_SEARCH_BASE}?${params.toString()}`;
-  const res = await fetch(url, fetchOptions);
+  const maxRetries = 2;
+  let lastError: Error | null = null;
 
-  if (!res.ok) {
-    throw new Error(`Open Food Facts search failed: ${res.status}`);
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000);
+
+      const res = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        if (res.status === 504 || res.status === 502) {
+          lastError = new Error(
+            `Open Food Facts is temporarily unavailable (${res.status}). Please try again in a moment.`
+          );
+          if (attempt < maxRetries) {
+            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+            continue;
+          }
+          throw lastError;
+        }
+        throw new Error(`Open Food Facts search failed: ${res.status}`);
+      }
+
+      const data = await res.json();
+      let products = Array.isArray(data.products) ? data.products : [];
+
+      if (opts?.realEggsOnly) {
+        products = filterRealEggsOnly(products, { checkIngredients: true });
+      }
+
+      products = prioritizeByStrictMatch(products, searchTerms.trim());
+
+      return {
+        count: data.count ?? 0,
+        page: data.page ?? 1,
+        page_size: data.page_size ?? 24,
+        products,
+      };
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < maxRetries && (lastError.name === "AbortError" || lastError.message.includes("504"))) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw lastError;
+    }
   }
 
-  const data = await res.json();
-  let products = Array.isArray(data.products) ? data.products : [];
-
-  if (opts?.realEggsOnly) {
-    products = filterRealEggsOnly(products, { checkIngredients: true });
-  }
-
-  return {
-    count: data.count ?? 0,
-    page: data.page ?? 1,
-    page_size: data.page_size ?? 24,
-    products,
-  };
+  throw lastError ?? new Error("Open Food Facts search failed");
 }
 
 /**

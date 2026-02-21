@@ -11,8 +11,6 @@ import { search } from "@/lib/openfoodfacts";
  *   brand (optional) - filter by brand
  *   country (optional) - filter by country (e.g., united-states, en:united-states)
  *   page (optional) - page number (default 1)
- *
- * Results are filtered server-side to real eggs only (excludes mayo, cakes, etc.).
  *   page_size (optional) - results per page (default 24)
  *
  * Rate limit: 10 requests/minute (Open Food Facts)
@@ -40,7 +38,7 @@ export async function GET(request: NextRequest) {
       pageSize,
       brand: searchParams.get("brand") ?? undefined,
       country: searchParams.get("country") ?? undefined,
-      realEggsOnly: true,
+      realEggsOnly: false,
     });
 
     return NextResponse.json(result);

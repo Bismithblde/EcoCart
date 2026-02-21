@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       pageSize,
       brand: searchParams.get("brand") ?? undefined,
       country: searchParams.get("country") ?? undefined,
-      realEggsOnly: true,
+      realEggsOnly: false,
     });
 
     const enrichedProducts = result.products.map((p) => {

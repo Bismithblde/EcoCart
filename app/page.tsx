@@ -2,84 +2,139 @@
 
 import { useState } from 'react';
 import ProductInput from '@/components/ProductInput';
+import SustainabilityDashboard from '@/components/SustainabilityDashboard';
+import BetterChoiceCard from '@/components/BetterChoiceCard';
 
 export default function Home() {
-  const [productName, setProductName] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [showBetterChoice, setShowBetterChoice] = useState(false);
 
   const handleProductSubmit = async (name: string) => {
-    setProductName(name);
-    setIsLoading(true);
+    setShowDashboard(false);
+    setShowBetterChoice(false);
     
-    // TODO: Add API call to check sustainability
-    // This will be connected to the sustainability checking logic
-    console.log('Checking sustainability for:', name);
-    
-    // Simulated delay - replace with actual API call
+    // Simulate API call
     setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+      setShowDashboard(true);
+    }, 800);
+    
+    setTimeout(() => {
+      setShowBetterChoice(true);
+    }, 1600);
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans px-4">
-      <main className="w-full max-w-2xl">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            EcoCart
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Check the sustainability of any product
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-          <ProductInput onSubmit={handleProductSubmit} isLoading={isLoading} />
-          
-          {productName && (
-            <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-gray-700 dark:text-gray-300">
-                <span className="font-semibold">Product:</span> {productName}
-              </p>
-              {!isLoading && (
-                <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm">
-                  Sustainability analysis results will appear here
-                </p>
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-stone-50 to-lime-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 font-sans">
+      {/* Header */}
+      <div className="border-b border-stone-200 dark:border-stone-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">EcoCart</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Sustainability Made Simple</p>
             </div>
-          )}
+            <div className="text-3xl">🌱</div>
+          </div>
         </div>
+      </div>
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-4xl mb-2">♻️</div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              Eco-Friendly
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Discover sustainable alternatives
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Input Section */}
+        <section className="mb-16">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              Check Any Product's Sustainability
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Get detailed environmental impact analysis and discover eco-friendly alternatives
             </p>
           </div>
-          <div className="text-center">
-            <div className="text-4xl mb-2">🌍</div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              Environmental Impact
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Understand product footprint
-            </p>
+
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-12 max-w-2xl mx-auto mb-12">
+            <ProductInput onSubmit={handleProductSubmit} />
           </div>
-          <div className="text-center">
-            <div className="text-4xl mb-2">💚</div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              Make a Difference
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Choose sustainable products
-            </p>
+        </section>
+
+        {/* Dashboard Section */}
+        {showDashboard && (
+          <section className="mb-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <SustainabilityDashboard
+              productName="Organic Cotton T-Shirt"
+              ecoScore={82}
+              carbonFootprint="Low"
+              waterUsage="Minimal (500L)"
+              packagingType="Biodegradable"
+            />
+          </section>
+        )}
+
+        {/* Better Choice Section */}
+        {showBetterChoice && (
+          <section className="mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                💡 Smarter Choices
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                We found even more sustainable alternatives
+              </p>
+            </div>
+            <BetterChoiceCard
+              originalProduct="Conventional Cotton T-Shirt"
+              originalScore={45}
+              alternativeProduct="Organic Hemp Blend T-Shirt"
+              alternativeScore={88}
+              impactSaved="2.5kg of CO₂"
+              impactType="co2"
+              onViewProduct={() => alert('Navigating to product...')}
+            />
+          </section>
+        )}
+
+        {/* Features Section */}
+        <section className="py-12">
+          <h3 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">
+            Why Choose EcoCart?
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="text-4xl mb-4">📊</div>
+              <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                Accurate Metrics
+              </h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                Get comprehensive sustainability scores based on certified data and environmental impact studies
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="text-4xl mb-4">💡</div>
+              <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                Smart Recommendations
+              </h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                Discover better alternatives that reduce your environmental footprint without compromising quality
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="text-4xl mb-4">🌱</div>
+              <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                Make an Impact
+              </h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                Every choice counts. See exactly how much you're helping the planet with each purchase
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-gray-800 mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-gray-600 dark:text-gray-400">
+          <p>© 2025 EcoCart. Making sustainability simple, one product at a time.</p>
+        </div>
+      </footer>
     </div>
   );
 }

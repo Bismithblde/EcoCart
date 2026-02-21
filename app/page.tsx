@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import ProductInput from '@/components/ProductInput';
 import SustainabilityDashboard from '@/components/SustainabilityDashboard';
 import BetterChoiceCard from '@/components/BetterChoiceCard';
@@ -24,8 +25,31 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans px-4">
-      <main className="w-full max-w-2xl">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans">
+      <header className="border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+        <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between h-16">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            EcoCart
+          </h1>
+          <div className="flex gap-4">
+            <Link
+              href="/login"
+              className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/signup"
+              className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Sign up
+            </Link>
+          </div>
+        </nav>
+      </header>
+
+      <div className="flex flex-col items-center justify-center flex-1 px-4 py-12">
+        <main className="w-full max-w-2xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
             EcoCart
@@ -163,6 +187,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }

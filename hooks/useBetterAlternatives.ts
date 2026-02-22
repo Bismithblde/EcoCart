@@ -12,6 +12,7 @@ export interface AlternativeAssessment {
   score: number;
   reasoning: string;
   better_alternatives: string[];
+  tags?: string[];
 }
 
 export interface AlternativeProduct {

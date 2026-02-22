@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, List } from "lucide-react";
+import { ShoppingBag, List, X } from "lucide-react";
 import ProductInput from "@/components/ProductInput";
 import SustainabilityDashboard from "@/components/SustainabilityDashboard";
 import BetterChoiceCard from "@/components/BetterChoiceCard";
@@ -12,7 +12,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearch, type SearchResult } from "@/hooks/useSearch";
 import { useAnalyzeSustainability } from "@/hooks/useAnalyzeSustainability";
-import { useBetterAlternatives } from "@/hooks/useBetterAlternatives";
+import { useBetterAlternatives, type BetterAlternativeItem } from "@/hooks/useBetterAlternatives";
+import { useShoppingLists } from "@/hooks/useShoppingLists";
+import { authFetch } from "@/lib/auth-client";
 
 export default function Home() {
   const router = useRouter();
@@ -22,8 +24,12 @@ export default function Home() {
     useAnalyzeSustainability();
   const { alternatives: betterAlternatives, isLoading: isLoadingAlternatives, error: alternativesError, fetchAlternatives } =
     useBetterAlternatives();
+  const { lists, refetch: refetchLists } = useShoppingLists();
   const [selectedProduct, setSelectedProduct] = useState<SearchResult | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [productToAdd, setProductToAdd] = useState<BetterAlternativeItem | null>(null);
+  const [addingToListId, setAddingToListId] = useState<string | null>(null);
+  const [addToListError, setAddToListError] = useState<string | null>(null);
 
   const handleProductSubmit = (name: string) => {
     setSelectedProduct(null);
@@ -58,6 +64,44 @@ export default function Home() {
         6,
         analysis.ecoScore
       );
+    }
+  };
+
+  const handleAddToChosenList = async (listId: string) => {
+    if (!productToAdd) return;
+    setAddingToListId(listId);
+    setAddToListError(null);
+    try {
+      const a = productToAdd.assessment;
+      const sustainability =
+        a && !("error" in a)
+          ? {
+              verdict: a.verdict,
+              score: a.score,
+              reasoning: a.reasoning,
+              better_alternatives: a.better_alternatives,
+              tags: a.tags,
+            }
+          : undefined;
+      const res = await authFetch(`/api/shopping-lists/${listId}/items`, {
+        method: "POST",
+        body: JSON.stringify({
+          code: productToAdd.product.code,
+          productName: productToAdd.product.product_name ?? undefined,
+          brands: productToAdd.product.brands ?? undefined,
+          sustainability,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to add");
+      }
+      setProductToAdd(null);
+      refetchLists();
+    } catch (err) {
+      setAddToListError(err instanceof Error ? err.message : "Failed to add to list");
+    } finally {
+      setAddingToListId(null);
     }
   };
 
@@ -285,8 +329,13 @@ export default function Home() {
                                   currentProduct={analysis.productName}
                                   currentScore={analysis.ecoScore}
                                   betterProduct={alt.product.product_name}
+                                  betterBrand={alt.product.brands}
                                   betterScore={a.score}
                                   improvement={a.reasoning}
+                                  onAddToList={() => {
+                                  setAddToListError(null);
+                                  setProductToAdd(alt);
+                                }}
                                 />
                               );
                             })}
@@ -318,6 +367,63 @@ export default function Home() {
             </div>
           </main>
         </div>
+
+        {productToAdd && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setProductToAdd(null)}>
+            <div
+              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl max-w-sm w-full p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add to list</h3>
+                <button
+                  type="button"
+                  onClick={() => setProductToAdd(null)}
+                  className="p-1 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1 font-medium">
+                {productToAdd.product.product_name}
+              </p>
+              {productToAdd.product.brands && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{productToAdd.product.brands}</p>
+              )}
+              {addToListError && (
+                <p className="text-sm text-red-600 dark:text-red-400 mb-3">{addToListError}</p>
+              )}
+              {lists.length === 0 ? (
+                <>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No lists yet. Create one from My Lists.</p>
+                  <Link
+                    href="/shopping-lists"
+                    className="inline-block px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium"
+                    onClick={() => setProductToAdd(null)}
+                  >
+                    Go to My Lists
+                  </Link>
+                </>
+              ) : (
+                <ul className="space-y-2">
+                  {lists.map((list) => (
+                    <li key={list.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleAddToChosenList(list.id)}
+                        disabled={addingToListId !== null}
+                        className="w-full text-left px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium disabled:opacity-50"
+                      >
+                        {addingToListId === list.id ? "Adding…" : list.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </ProtectedRoute>
   );

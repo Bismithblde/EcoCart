@@ -1,22 +1,28 @@
 'use client';
 
-import { TrendingUp, CheckCircle } from 'lucide-react';
+import { TrendingUp, CheckCircle, ListPlus } from 'lucide-react';
 
 interface BetterChoiceCardProps {
   currentProduct: string;
   currentScore: number;
   betterProduct: string;
+  /** Brand of the better product (e.g. from API). */
+  betterBrand?: string;
   /** Optional when alternatives are text-only suggestions. */
   betterScore?: number;
   improvement: string;
+  /** When provided, shows "Add to list" button. */
+  onAddToList?: () => void;
 }
 
 export default function BetterChoiceCard({
   currentProduct,
   currentScore,
   betterProduct,
+  betterBrand,
   betterScore,
   improvement,
+  onAddToList,
 }: BetterChoiceCardProps) {
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600 dark:text-green-400';
@@ -50,7 +56,10 @@ export default function BetterChoiceCard({
           <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
           <p className="font-semibold text-green-900 dark:text-green-300">Better Choice</p>
         </div>
-        <p className="font-semibold text-gray-900 dark:text-white text-lg mb-2">{betterProduct}</p>
+        <p className="font-semibold text-gray-900 dark:text-white text-lg mb-0.5">{betterProduct}</p>
+        {betterBrand ? (
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{betterBrand}</p>
+        ) : null}
         {betterScore != null && (
           <div className={`inline-block px-3 py-1 rounded-full font-bold ${getScoreColor(betterScore)} ${getScoreBgColor(betterScore)}`}>
             Score: {betterScore}
@@ -59,6 +68,16 @@ export default function BetterChoiceCard({
         <p className="text-sm text-green-700 dark:text-green-300 mt-2 font-semibold flex items-center gap-1">
           <span className="text-lg">↑</span> {improvement}
         </p>
+        {onAddToList && (
+          <button
+            type="button"
+            onClick={onAddToList}
+            className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors"
+          >
+            <ListPlus className="w-4 h-4" />
+            Add to list
+          </button>
+        )}
       </div>
 
       <p className="text-xs text-gray-600 dark:text-gray-400 text-center">Switch to a more sustainable alternative</p>

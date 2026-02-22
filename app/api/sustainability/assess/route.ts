@@ -40,7 +40,12 @@ export async function POST(request: NextRequest) {
         categories: typeof o.categories === "string" ? o.categories : undefined,
         nutriscore_grade: typeof o.nutriscore_grade === "string" ? o.nutriscore_grade : undefined,
         ecoscore_grade: typeof o.ecoscore_grade === "string" ? o.ecoscore_grade : undefined,
-        ingredients_text: typeof o.ingredients_text === "string" ? o.ingredients_text : undefined,
+        ingredients_text:
+          typeof o.ingredients_text === "string"
+            ? o.ingredients_text
+            : typeof o.ingredients === "string"
+              ? o.ingredients
+              : undefined,
         labels_tags: o.labels_tags,
         additives_tags: o.additives_tags,
         allergens_tags: o.allergens_tags,

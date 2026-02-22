@@ -15,6 +15,8 @@ export interface SearchResult {
   categories?: string;
   /** Short description from categories or ingredients (backend-derived). */
   description?: string;
+  /** Full ingredients list from master DB; sent to AI for environment/ethical assessment. */
+  ingredients?: string;
   ecoscore_grade?: string;
   ecoscore_score?: number;
   nutriscore_grade?: string;

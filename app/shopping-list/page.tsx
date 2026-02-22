@@ -78,6 +78,8 @@ export default function ShoppingListCreatorPage() {
       product_name: result.product_name,
       brands: result.brands,
       categories: result.categories,
+      ingredients: result.ingredients,
+      ingredients_text: result.ingredients,
       ecoscore_grade: result.ecoscore_grade,
       nutriscore_grade: result.nutriscore_grade,
     };

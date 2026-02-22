@@ -11,6 +11,8 @@ export interface SearchResultProduct {
   brands?: string;
   categories?: string;
   description?: string;
+  /** Full ingredients list from master DB; used by AI for environment/ethical assessment. */
+  ingredients?: string;
   ecoscore_grade?: string;
   ecoscore_score?: number;
   nutriscore_grade?: string;
@@ -37,6 +39,7 @@ function rowToSearchResult(row: Record<string, unknown>): SearchResultProduct {
   const brands = row.brands != null ? String(row.brands).trim() : undefined;
   const categories = row.categories != null ? String(row.categories).trim() : undefined;
   const labels = row.labels != null ? String(row.labels).trim() : undefined;
+  const ingredients = row.ingredients != null ? String(row.ingredients).trim() : undefined;
   const description = [categories, labels].filter(Boolean).join(" • ") || undefined;
   const ecoscoreGrade =
     row.ecoscore_grade != null
@@ -66,6 +69,7 @@ function rowToSearchResult(row: Record<string, unknown>): SearchResultProduct {
     brands: brands || undefined,
     categories: categories || undefined,
     description: description || undefined,
+    ingredients: ingredients || undefined,
     ecoscore_grade: ecoscoreGrade || undefined,
     ecoscore_score: Number.isFinite(ecoscoreScore) ? ecoscoreScore : undefined,
     nutriscore_grade: nutriscoreGrade,

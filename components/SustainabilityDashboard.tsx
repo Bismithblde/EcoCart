@@ -16,6 +16,8 @@ interface SustainabilityDashboardProps {
   reasoning?: string;
   /** Verdict: good | moderate | poor */
   verdict?: 'good' | 'moderate' | 'poor';
+  /** Summary tags from the AI (e.g. no pledge, bad ingredients, unhealthy). */
+  tags?: string[];
 }
 
 function EcoScoreRing({ score }: { score: number }) {
@@ -88,6 +90,7 @@ export default function SustainabilityDashboard({
   metrics,
   reasoning,
   verdict,
+  tags = [],
 }: SustainabilityDashboardProps) {
   const verdictLabel = verdict === 'good' ? 'Good' : verdict === 'moderate' ? 'Moderate' : verdict === 'poor' ? 'Poor' : null;
 
@@ -101,6 +104,19 @@ export default function SustainabilityDashboard({
         <p className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
           Verdict: <span className="capitalize">{verdictLabel}</span>
         </p>
+      )}
+
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center rounded-md bg-gray-200 dark:bg-gray-600 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-200"
+            >
+              {tag.replace(/-/g, " ")}
+            </span>
+          ))}
+        </div>
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

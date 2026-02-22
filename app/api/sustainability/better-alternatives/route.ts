@@ -21,6 +21,7 @@ function toProductSummary(p: SearchResultProduct): ProductSummary {
     categories: p.categories,
     ecoscore_grade: p.ecoscore_grade,
     nutriscore_grade: p.nutriscore_grade,
+    ingredients_text: p.ingredients,
   };
 }
 
@@ -111,13 +112,14 @@ export async function POST(request: NextRequest) {
       alternatives: result.map(({ product: p, assessment }) => ({
         product: p,
         assessment:
-          "error" in assessment
+            "error" in assessment
             ? { error: assessment.error }
             : {
                 verdict: assessment.verdict,
                 score: assessment.score,
                 reasoning: assessment.reasoning,
                 better_alternatives: assessment.better_alternatives,
+                tags: assessment.tags ?? [],
               },
       })),
     });

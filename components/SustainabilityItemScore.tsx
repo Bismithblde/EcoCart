@@ -66,6 +66,18 @@ export function SustainabilityItemScore({
           >
             {sustainability.score}/100
           </span>
+          {sustainability.tags && sustainability.tags.length > 0 && (
+            <span className="flex flex-wrap items-center gap-1">
+              {(sustainability.tags.slice(0, 3)).map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex rounded bg-gray-200 dark:bg-gray-600 px-1.5 py-0.5 text-xs text-gray-700 dark:text-gray-200"
+                >
+                  {tag.replace(/-/g, " ")}
+                </span>
+              ))}
+            </span>
+          )}
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}

@@ -56,6 +56,9 @@ export async function PATCH(
       )
         ? sustainability.better_alternatives
         : null;
+      updates.sustainability_tags = Array.isArray(sustainability?.tags)
+        ? sustainability.tags
+        : null;
     }
 
     const supabase = getSupabaseForUser(token);

@@ -55,6 +55,9 @@ export async function POST(
     )
       ? sustainability.better_alternatives
       : null;
+    const sustainability_tags = Array.isArray(sustainability?.tags)
+      ? sustainability.tags
+      : null;
 
     const supabase = getSupabaseForUser(token);
     const { data, error } = await supabase
@@ -68,6 +71,7 @@ export async function POST(
         sustainability_score,
         sustainability_reasoning,
         sustainability_better_alternatives,
+        sustainability_tags,
       })
       .select()
       .single();

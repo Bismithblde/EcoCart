@@ -65,6 +65,10 @@ export default function Home() {
         product_name: selectedProduct.product_name,
         brands: selectedProduct.brands,
         categories: selectedProduct.categories,
+        ingredients: selectedProduct.ingredients,
+        ingredients_text: selectedProduct.ingredients,
+        ecoscore_grade: selectedProduct.ecoscore_grade,
+        nutriscore_grade: selectedProduct.nutriscore_grade,
       });
     }
   };
@@ -263,6 +267,7 @@ export default function Home() {
                         ecoScore={analysis.ecoScore}
                         verdict={analysis.verdict}
                         reasoning={analysis.reasoning}
+                        tags={analysis.tags}
                         metrics={analysis.metrics}
                       />
 

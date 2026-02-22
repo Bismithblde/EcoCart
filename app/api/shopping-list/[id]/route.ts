@@ -92,6 +92,9 @@ export async function PATCH(
       updates.sustainability_better_alternatives = Array.isArray(sustainability?.better_alternatives)
         ? sustainability.better_alternatives
         : null;
+      updates.sustainability_tags = Array.isArray(sustainability?.tags)
+        ? sustainability.tags
+        : null;
     }
 
     const supabase = getSupabaseForUser(token);

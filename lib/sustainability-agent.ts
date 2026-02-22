@@ -39,11 +39,15 @@ export interface SustainabilityAssessment {
   score: number;
   reasoning: string;
   better_alternatives: string[];
+  /** Short summary tags from the AI (e.g. no pledge, bad ingredients, unhealthy). */
+  tags: string[];
 }
 
 const SYSTEM_PROMPT = `You are a sustainability assessor for consumer products. Environmental impact is the top priority; health/nutrition is secondary.
 
 Use the product data provided (name, brand, categories, labels, ingredients_text, allergens, nutriments, quantity, ecoscore). If you need more detail, call get_product_details with the product barcode.
+
+When ingredients_text (or ingredients) is present and non-empty: you MUST assess whether those ingredients are good for the environment and ethically sourced. Consider deforestation-linked ingredients (e.g. palm oil, soy from high-risk regions), animal welfare (animal-derived ingredients), pesticides, and labor/sourcing ethics where relevant. Include this ingredients assessment in your reasoning (e.g. "Ingredients include… which raises concerns about…" or "Ingredients appear to be… with no major environmental or ethical red flags"). If you are unsure about specific ingredients, use search_google (e.g. "ingredient name sustainability ethical").
 
 Treat ecoscore_grade as one input among others, not as definitive. If search results, brand commitments, or other evidence contradicts or qualifies the ecoscore (e.g. brand is improving practices, product has certifications the score doesn’t reflect), weigh that evidence and adjust your assessment; do not take the ecoscore literally when it conflicts with what you find.
 
@@ -55,13 +59,15 @@ Use search_google for: (1) environmental impact when ecoscore is missing, (2) co
 
 Do not assume missing data means negative. If the product does not state egg type (cage-free, free-range, organic, etc.), animal-welfare certifications, or sourcing details, do not state that it "lacks" or "has no" those attributes—the data may simply be incomplete. Say instead that the product "does not specify" or "does not list" that information on the label, or search for more detail; never assume conventional/caged production or lack of certifications when the product record is silent.
 
-Consider (in this order of priority): (1) environmental impact—use ecoscore as a signal but combine with search results and brand context; if evidence contradicts the ecoscore, say so and reflect it in verdict/score, (2) animal welfare (only as stated or found—do not assume), (3) harmful or unsustainable ingredients, (4) packaging and sourcing, (5) nutrition only if relevant.
+Consider (in this order of priority): (1) environmental impact—use ecoscore as a signal but combine with search results and brand context; if evidence contradicts the ecoscore, say so and reflect it in verdict/score, (2) when ingredients are provided—assess them for environmental and ethical sourcing (palm oil, animal welfare, pesticides, labor) and state this in reasoning, (3) animal welfare (only as stated or found—do not assume), (4) harmful or unsustainable ingredients, (5) packaging and sourcing, (6) nutrition only if relevant.
 
-In your "reasoning" field always state environmental impact first. When ecoscore is present, you may cite it but if you have contradictory or mitigating evidence (e.g. brand commitments, certifications), note that and do not treat the ecoscore as final (e.g. "Ecoscore D, though the brand has committed to…" or "Search results suggest better practices than the ecoscore implies"). If you found company sustainability efforts, mention them. If you searched and found nothing useful, say "Environmental impact could not be determined from search." Then add health/nutrition in a second phrase if relevant.
+In your "reasoning" field always state environmental impact first. When ecoscore is present, you may cite it but if you have contradictory or mitigating evidence (e.g. brand commitments, certifications), note that and do not treat the ecoscore as final (e.g. "Ecoscore D, though the brand has committed to…" or "Search results suggest better practices than the ecoscore implies"). If you found company sustainability efforts, mention them. If you searched and found nothing useful, say "Environmental impact could not be determined from search." When ingredients were provided, include your assessment of whether they are environmentally sound and ethically sourced. Then add health/nutrition in a final phrase if relevant.
+
+Also output a "tags" array: 1–3 short, lowercase summary tags that capture the main conclusions (e.g. "no pledge", "bad ingredients", "unhealthy", "palm oil", "brand committed", "organic"). You decide which tags fit; pick the 1–3 most relevant. Use concise slug-like phrases (lowercase, no spaces or use hyphens).
 
 Respond with a single JSON object only, no other text:
 
-{"verdict":"good"|"moderate"|"poor","score":<0-100>,"reasoning":"<1-2 sentences: environmental impact first, then other factors>","better_alternatives":["<short suggestion>",...]}
+{"verdict":"good"|"moderate"|"poor","score":<0-100>,"reasoning":"<1-2 sentences: environmental impact first, then other factors>","better_alternatives":["<short suggestion>",...],"tags":["<tag1>","<tag2>",...]}
 
 Examples: cage-free eggs → good but not perfect (pasture-raised is better); Dove (soap) → often poor due to ingredients; organic vegetables → good.`;
 
@@ -130,9 +136,12 @@ function buildUserMessage(product: ProductSummary): string {
 
   const hasEcoscore = product.ecoscore_grade != null && String(product.ecoscore_grade).trim() !== "";
   const hasBrand = product.brands != null && String(product.brands).trim() !== "";
+  const hasIngredients =
+    product.ingredients_text != null && String(product.ingredients_text).trim() !== "";
   return `Assess this product. Environmental impact is the main priority; state it first in your reasoning.
 ${!hasEcoscore ? "ecoscore_grade is MISSING. You MUST call search_google with a query like '" + (product.product_name ?? "") + " " + (product.brands ?? "") + " environmental impact' (or similar) BEFORE returning your JSON. Use the search results in your reasoning. Do not return JSON that says 'consider searching'—you must search first." : ""}
 ${hasBrand ? "A brand is given. Also call search_google for that brand's sustainability (e.g. brand name + ' sustainability environmental') and mention any relevant commitments in your reasoning." : ""}
+${hasIngredients ? "Ingredients are provided below; determine whether they are good for the environment and ethically sourced and include that assessment in your reasoning." : ""}
 Do not assume missing labels (e.g. cage-free, organic) mean the product lacks them—say 'does not specify' if the data is silent.
 Respond with only the JSON object when done.
 
@@ -164,12 +173,18 @@ function parseAssessment(content: string | null): SustainabilityAssessment | nul
     const better_alternatives = Array.isArray(parsed.better_alternatives)
       ? (parsed.better_alternatives as string[])
       : [];
+    const rawTags = Array.isArray(parsed.tags) ? (parsed.tags as unknown[]) : [];
+    const tags = rawTags
+      .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+      .map((t) => t.trim().toLowerCase().replace(/\s+/g, "-"))
+      .slice(0, 3);
     if (!["good", "moderate", "poor"].includes(verdict)) return null;
     return {
       verdict: verdict as "good" | "moderate" | "poor",
       score: Math.max(0, Math.min(100, Math.round(score))),
       reasoning,
       better_alternatives,
+      tags,
     };
   } catch {
     return null;

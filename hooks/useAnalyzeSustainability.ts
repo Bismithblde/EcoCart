@@ -18,6 +18,7 @@ export interface SustainabilityAssessmentResult {
   score: number;
   reasoning: string;
   better_alternatives: string[];
+  tags?: string[];
 }
 
 export interface AnalysisResult {
@@ -25,6 +26,7 @@ export interface AnalysisResult {
   ecoScore: number;
   verdict: 'good' | 'moderate' | 'poor';
   reasoning: string;
+  tags: string[];
   metrics: {
     carbonFootprint: string;
     waterUsage: string;
@@ -100,6 +102,7 @@ export function useAnalyzeSustainability() {
         ecoScore: a.score,
         verdict: a.verdict,
         reasoning: a.reasoning,
+        tags: a.tags ?? [],
         metrics: {
           carbonFootprint: 'Assessed by AI',
           waterUsage: 'Assessed by AI',

@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
     const sustainability_better_alternatives = Array.isArray(sustainability?.better_alternatives)
       ? sustainability.better_alternatives
       : null;
+    const sustainability_tags = Array.isArray(sustainability?.tags) ? sustainability.tags : null;
 
     const userId = await getUserIdFromToken(token);
     if (!userId) {
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
         sustainability_score,
         sustainability_reasoning,
         sustainability_better_alternatives,
+        sustainability_tags,
       })
       .select()
       .single();

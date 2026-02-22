@@ -10,6 +10,7 @@ export interface ShoppingListSustainability {
   score: number;
   reasoning: string;
   better_alternatives: string[];
+  tags?: string[];
 }
 
 /** Row from shopping_list (legacy single list per user). */
@@ -77,12 +78,15 @@ function sustainabilityFromRow(row: {
   sustainability_reasoning: string | null;
   sustainability_better_alternatives: string[] | null;
 }): ShoppingListSustainability | null {
+  const rowWithTags = row as typeof row & { sustainability_tags?: string[] | null };
+  const tags = Array.isArray(rowWithTags.sustainability_tags) ? rowWithTags.sustainability_tags : undefined;
   return row.sustainability_verdict != null && row.sustainability_score != null
     ? {
         verdict: row.sustainability_verdict,
         score: row.sustainability_score,
         reasoning: row.sustainability_reasoning ?? "",
         better_alternatives: row.sustainability_better_alternatives ?? [],
+        ...(tags?.length ? { tags } : {}),
       }
     : null;
 }

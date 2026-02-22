@@ -1,6 +1,6 @@
 'use client';
 
-import { Wind, Droplets, Package } from 'lucide-react';
+import { Wind, Droplets, Package, MessageSquare } from 'lucide-react';
 
 interface Metrics {
   carbonFootprint: string;
@@ -12,6 +12,10 @@ interface SustainabilityDashboardProps {
   productName: string;
   ecoScore: number;
   metrics: Metrics;
+  /** AI reasoning for the assessment (from sustainability/assess). */
+  reasoning?: string;
+  /** Verdict: good | moderate | poor */
+  verdict?: 'good' | 'moderate' | 'poor';
 }
 
 function EcoScoreRing({ score }: { score: number }) {
@@ -82,12 +86,22 @@ export default function SustainabilityDashboard({
   productName,
   ecoScore,
   metrics,
+  reasoning,
+  verdict,
 }: SustainabilityDashboardProps) {
+  const verdictLabel = verdict === 'good' ? 'Good' : verdict === 'moderate' ? 'Moderate' : verdict === 'poor' ? 'Poor' : null;
+
   return (
     <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl border border-green-200 dark:border-green-800 p-8">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
         Sustainability Analysis: {productName}
       </h2>
+
+      {verdictLabel && (
+        <p className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+          Verdict: <span className="capitalize">{verdictLabel}</span>
+        </p>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="flex justify-center md:justify-start">
@@ -115,6 +129,16 @@ export default function SustainabilityDashboard({
           />
         </div>
       </div>
+
+      {reasoning && (
+        <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex gap-3">
+          <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Assessment</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{reasoning}</p>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <p className="text-sm text-gray-700 dark:text-gray-300">

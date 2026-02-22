@@ -161,16 +161,33 @@ function hasRealEggsOnlyIngredients(product: Record<string, unknown>): boolean {
 }
 
 /**
+ * Score how "English" a product name looks (0–100). Prefers mostly ASCII names
+ * so German/French etc. get deprioritized when preferEnglish is used.
+ */
+function englishNameScore(productName: string): number {
+  if (!productName || !productName.trim()) return 50;
+  const s = productName.trim();
+  let ascii = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s.charCodeAt(i) < 128) ascii++;
+  }
+  return Math.round((ascii / s.length) * 100);
+}
+
+/**
  * Prioritize products so strict matches (product IS the searched item) rank above
  * products that only contain the term as a secondary ingredient.
+ * When preferEnglish is true, products with mostly ASCII (English-friendly) names rank higher.
  */
 export function prioritizeByStrictMatch(
   products: Array<Record<string, unknown>>,
-  searchTerm: string
+  searchTerm: string,
+  opts?: { preferEnglish?: boolean }
 ): Array<Record<string, unknown>> {
   const term = searchTerm.trim().toLowerCase();
   const words = term.split(/\s+/).filter(Boolean);
   const primaryTerm = words[words.length - 1] ?? term;
+  const preferEnglish = opts?.preferEnglish ?? true;
 
   function score(p: Record<string, unknown>): number {
     let s = 0;
@@ -220,10 +237,37 @@ export function prioritizeByStrictMatch(
       if (gumOnlyInAdditives) s -= 60;
     }
 
+    if (preferEnglish) {
+      const enScore = englishNameScore(String(p.product_name ?? ""));
+      s += enScore * 0.5;
+    }
     return s;
   }
 
   return [...products].sort((a, b) => score(b) - score(a));
+}
+
+/**
+ * Build a short description for a product from categories or ingredients.
+ */
+function productDescription(p: Record<string, unknown>): string {
+  const categories = p.categories ?? p.categories_tags;
+  if (categories) {
+    const catStr = Array.isArray(categories)
+      ? (categories as string[])
+          .filter((c) => typeof c === "string" && c.length > 0)
+          .map((c) => String(c).replace(/^[a-z]{2}:/i, "").replace(/-/g, " "))
+          .slice(0, 3)
+          .join(", ")
+      : String(categories).replace(/^[a-z]{2}:/i, "").replace(/-/g, " ");
+    if (catStr.trim()) return catStr.trim();
+  }
+  const ingredients = String(p.ingredients_text ?? "").trim();
+  if (ingredients.length > 0) {
+    const snippet = ingredients.length > 120 ? ingredients.slice(0, 117) + "…" : ingredients;
+    return snippet;
+  }
+  return "";
 }
 
 /**
@@ -295,21 +339,21 @@ export async function search(
     params.set("brands_tags", opts.brand.trim());
   }
 
-  if (opts?.country?.trim()) {
-    const countryTag = toCountryTag(opts.country);
-    params.set("tagtype_0", "countries");
-    params.set("tag_contains_0", "contains");
-    params.set("tag_0", countryTag);
-  }
+  const country = opts?.country?.trim() || "united-states";
+  const countryTag = toCountryTag(country);
+  params.set("tagtype_0", "countries");
+  params.set("tag_contains_0", "contains");
+  params.set("tag_0", countryTag);
 
   const url = `${OFF_SEARCH_BASE}?${params.toString()}`;
-  const maxRetries = 2;
+  const OFF_TIMEOUT_MS = 15000;
+  const maxRetries = 1;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 25000);
+      const timeout = setTimeout(() => controller.abort(), OFF_TIMEOUT_MS);
 
       const res = await fetch(url, {
         ...fetchOptions,
@@ -323,7 +367,7 @@ export async function search(
             `Open Food Facts is temporarily unavailable (${res.status}). Please try again in a moment.`
           );
           if (attempt < maxRetries) {
-            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+            await new Promise((r) => setTimeout(r, 1000));
             continue;
           }
           throw lastError;
@@ -338,7 +382,14 @@ export async function search(
         products = filterRealEggsOnly(products, { checkIngredients: true });
       }
 
-      products = prioritizeByStrictMatch(products, searchTerms.trim());
+      products = prioritizeByStrictMatch(products, searchTerms.trim(), {
+        preferEnglish: true,
+      });
+
+      products = products.map((p: Record<string, unknown>) => ({
+        ...p,
+        description: productDescription(p),
+      }));
 
       return {
         count: data.count ?? 0,
@@ -348,9 +399,8 @@ export async function search(
       };
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
-      if (attempt < maxRetries && (lastError.name === "AbortError" || lastError.message.includes("504"))) {
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-        continue;
+      if (lastError.name === "AbortError") {
+        throw new Error("Open Food Facts request timed out. Please try again.");
       }
       throw lastError;
     }

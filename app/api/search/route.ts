@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { search } from "@/lib/openfoodfacts";
+
+const SEARCH_CACHE_REVALIDATE = 120;
 
 /**
  * GET /api/search
  *
  * Search for products via Open Food Facts.
+ * Responses are cached for 2 minutes per (q, country, page, page_size, brand).
  *
  * Query params:
  *   q (required) - search keywords (e.g., eggs, gum, cage free eggs)
@@ -32,14 +36,23 @@ export async function GET(request: NextRequest) {
       parseInt(searchParams.get("page_size") ?? "24", 10) || 24,
       100
     );
+    const brand = searchParams.get("brand") ?? undefined;
+    const country = searchParams.get("country") ?? "united-states";
 
-    const result = await search(q.trim(), {
-      page,
-      pageSize,
-      brand: searchParams.get("brand") ?? undefined,
-      country: searchParams.get("country") ?? undefined,
-      realEggsOnly: false,
-    });
+    const getCachedSearch = unstable_cache(
+      async () =>
+        search(q.trim(), {
+          page,
+          pageSize,
+          brand,
+          country,
+          realEggsOnly: false,
+        }),
+      ["search", q.trim(), String(page), String(pageSize), brand ?? "", country ?? ""],
+      { revalidate: SEARCH_CACHE_REVALIDATE }
+    );
+
+    const result = await getCachedSearch();
 
     return NextResponse.json(result);
   } catch (err) {

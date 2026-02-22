@@ -19,3 +19,20 @@ export function getSupabase(): SupabaseClient {
   _supabase = createClient(url, key);
   return _supabase;
 }
+
+/**
+ * Supabase client authenticated as the user for RLS-protected tables.
+ * Pass the access_token from Authorization: Bearer <token>.
+ */
+export function getSupabaseForUser(accessToken: string): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error(
+      "Missing Supabase env vars. Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_ANON_KEY to .env.local"
+    );
+  }
+  return createClient(url, key, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+}

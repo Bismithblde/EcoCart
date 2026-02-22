@@ -6,7 +6,8 @@ interface BetterChoiceCardProps {
   currentProduct: string;
   currentScore: number;
   betterProduct: string;
-  betterScore: number;
+  /** Optional when alternatives are text-only suggestions. */
+  betterScore?: number;
   improvement: string;
 }
 
@@ -17,8 +18,6 @@ export default function BetterChoiceCard({
   betterScore,
   improvement,
 }: BetterChoiceCardProps) {
-  const scoreDifference = betterScore - currentScore;
-
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600 dark:text-green-400';
     if (score >= 60) return 'text-amber-600 dark:text-amber-400';
@@ -52,9 +51,11 @@ export default function BetterChoiceCard({
           <p className="font-semibold text-green-900 dark:text-green-300">Better Choice</p>
         </div>
         <p className="font-semibold text-gray-900 dark:text-white text-lg mb-2">{betterProduct}</p>
-        <div className={`inline-block px-3 py-1 rounded-full font-bold ${getScoreColor(betterScore)} ${getScoreBgColor(betterScore)}`}>
-          Score: {betterScore}
-        </div>
+        {betterScore != null && (
+          <div className={`inline-block px-3 py-1 rounded-full font-bold ${getScoreColor(betterScore)} ${getScoreBgColor(betterScore)}`}>
+            Score: {betterScore}
+          </div>
+        )}
         <p className="text-sm text-green-700 dark:text-green-300 mt-2 font-semibold flex items-center gap-1">
           <span className="text-lg">↑</span> {improvement}
         </p>

@@ -2,9 +2,11 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setSession } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,11 +39,14 @@ export default function LoginPage() {
     }
 
     if (data.access_token) {
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
+      setSession(
+        data.access_token,
+        data.refresh_token,
+        data.expires_in ?? 3600,
+        { id: data.user.id, email: data.user.email ?? null }
+      );
+      router.push("/");
     }
-
-    router.push("/");
   }
 
   return (

@@ -2,13 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ProductInput from '@/components/ProductInput';
 import SustainabilityDashboard from '@/components/SustainabilityDashboard';
 import BetterChoiceCard from '@/components/BetterChoiceCard';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSearch } from '@/hooks/useSearch';
 import { useAnalyzeSustainability } from '@/hooks/useAnalyzeSustainability';
 
 export default function Home() {
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const { results, isLoading, error, search } = useSearch();
   const { analysis, isLoading: isAnalyzing, error: analysisError, analyze } = useAnalyzeSustainability();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -20,33 +25,55 @@ export default function Home() {
 
   const handleAnalyzeSustainability = async () => {
     if (selectedProduct) {
-      await analyze(selectedProduct.product_name, selectedProduct.brands);
+      await analyze(selectedProduct);
     }
   };
 
+  const handleSignOut = () => {
+    logout();
+    router.push('/login');
+  };
+
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans">
-      <header className="border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-        <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between h-16">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            EcoCart
-          </h1>
-          <div className="flex gap-4">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              Sign in
+    <ProtectedRoute>
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans">
+        <header className="border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+          <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between h-16">
+            <Link href="/" className="text-2xl font-bold text-gray-900 dark:text-white">
+              EcoCart
             </Link>
-            <Link
-              href="/signup"
-              className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              Sign up
-            </Link>
-          </div>
-        </nav>
-      </header>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/shopping-lists"
+                className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                My lists
+              </Link>
+              <Link
+                href="/shopping-list"
+                className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                New list
+              </Link>
+              {user && (
+                <>
+                  {user.email && (
+                    <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]">
+                      {user.email}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    Sign out
+                  </button>
+                </>
+              )}
+            </div>
+          </nav>
+        </header>
 
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-12">
         <main className="w-full max-w-2xl">
@@ -87,6 +114,9 @@ export default function Home() {
                   >
                     <p className="font-semibold text-gray-900 dark:text-white">{item.product_name}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{item.brands || 'No brand'}</p>
+                    {item.description && (
+                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 line-clamp-2">{item.description}</p>
+                    )}
                   </button>
                 ))}
               </div>
@@ -102,6 +132,9 @@ export default function Home() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Brand: {selectedProduct.brands || 'Unknown'} | Barcode: {selectedProduct.code || 'N/A'}
                 </p>
+                {selectedProduct.description && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{selectedProduct.description}</p>
+                )}
                 <button
                   onClick={handleAnalyzeSustainability}
                   disabled={isAnalyzing}
@@ -129,6 +162,8 @@ export default function Home() {
                   <SustainabilityDashboard 
                     productName={analysis.productName}
                     ecoScore={analysis.ecoScore}
+                    verdict={analysis.verdict}
+                    reasoning={analysis.reasoning}
                     metrics={analysis.metrics}
                   />
                   
@@ -189,5 +224,6 @@ export default function Home() {
       </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

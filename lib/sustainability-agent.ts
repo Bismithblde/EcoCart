@@ -235,11 +235,12 @@ export async function assessProduct(product: ProductSummary): Promise<Sustainabi
       const toolResults: OpenAI.Chat.Completions.ChatCompletionToolMessageParam[] = [];
       for (const tc of toolCalls) {
         const id = tc.id;
-        const name = tc.function?.name ?? "";
+        const fn = "function" in tc ? tc.function : undefined;
+        const name = fn?.name ?? "";
         const args = (() => {
           try {
-            return typeof tc.function?.arguments === "string"
-              ? (JSON.parse(tc.function.arguments) as Record<string, unknown>)
+            return typeof fn?.arguments === "string"
+              ? (JSON.parse(fn.arguments) as Record<string, unknown>)
               : {};
           } catch {
             return {};

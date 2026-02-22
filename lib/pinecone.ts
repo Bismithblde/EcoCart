@@ -41,7 +41,7 @@ export async function upsertVectors(
     const batch = vectors.slice(i, i + batchSize).map((v) => ({
       id: v.id,
       values: v.values,
-      metadata: v.metadata ?? {},
+      metadata: (v.metadata ?? {}) as Record<string, string | number | boolean>,
     }));
     await index.upsert({ records: batch });
   }

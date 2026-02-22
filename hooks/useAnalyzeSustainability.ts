@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 /** Product shape sent to the assess API (matches search result items). */
 export interface ProductForAssessment {
@@ -37,10 +37,30 @@ export interface AnalysisResult {
   }>;
 }
 
+/** Steps shown while the assessment is running (cycles every few seconds). */
+export const ASSESSMENT_PROGRESS_STEPS = [
+  'Analyzing product…',
+  'Checking environmental impact…',
+  'Looking up brand & certifications…',
+  'Writing assessment…',
+] as const;
+
 export function useAnalyzeSustainability() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progressStepIndex, setProgressStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setProgressStepIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setProgressStepIndex((i) => (i + 1) % ASSESSMENT_PROGRESS_STEPS.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const analyze = useCallback(async (product: ProductForAssessment) => {
     if (!product?.code) {
@@ -107,5 +127,7 @@ export function useAnalyzeSustainability() {
     setError(null);
   }, []);
 
-  return { analysis, isLoading, error, analyze, clearAnalysis };
+  const progressStep = ASSESSMENT_PROGRESS_STEPS[progressStepIndex] ?? ASSESSMENT_PROGRESS_STEPS[0];
+
+  return { analysis, isLoading, error, progressStep, progressSteps: ASSESSMENT_PROGRESS_STEPS, analyze, clearAnalysis };
 }

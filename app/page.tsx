@@ -7,6 +7,7 @@ import { ShoppingBag, List } from "lucide-react";
 import ProductInput from "@/components/ProductInput";
 import SustainabilityDashboard from "@/components/SustainabilityDashboard";
 import BetterChoiceCard from "@/components/BetterChoiceCard";
+import { AssessmentProgress } from "@/components/AssessmentProgress";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearch, type SearchResult, type SearchWeights, type SearchRanking } from "@/hooks/useSearch";
@@ -44,7 +45,7 @@ export default function Home() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { results, weights, isLoading, error, search } = useSearch();
-  const { analysis, isLoading: isAnalyzing, error: analysisError, analyze } =
+  const { analysis, isLoading: isAnalyzing, error: analysisError, progressStep, progressSteps, analyze } =
     useAnalyzeSustainability();
   const { alternatives: betterAlternatives, isLoading: isLoadingAlternatives, error: alternativesError, fetchAlternatives } =
     useBetterAlternatives();
@@ -238,9 +239,15 @@ export default function Home() {
                           />
                         </svg>
                       )}
-                      {isAnalyzing ? "Analyzing…" : "Analyze Sustainability"}
+                      {isAnalyzing ? progressStep : "Analyze Sustainability"}
                     </button>
                   </div>
+
+                  {isAnalyzing && (
+                    <div className="mt-4">
+                      <AssessmentProgress step={progressStep} steps={progressSteps} variant="full" />
+                    </div>
+                  )}
 
                   {analysisError && (
                     <div className="p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">

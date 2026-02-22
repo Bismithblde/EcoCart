@@ -2,7 +2,7 @@
  * Sync product vectors to Pinecone for semantic search.
  * Embeds three separate features per product (only if non-empty): product_name, categories, brands.
  * Stores in Pinecone namespaces "name", "categories", "brand" so search can query and rank separately.
- * Default: first 100k rows (override with --limit=N).
+ * Default: first 200k rows (override with --limit=N).
  *
  * Env: OPENAI_API_KEY, PINECONE_API_KEY, PINECONE_INDEX_NAME (default: hopperhacks),
  *      NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
@@ -37,10 +37,13 @@ function loadEnv() {
 loadEnv();
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
-const DEFAULT_LIMIT = 100000;
-const EMBED_BATCH = 50;
-const PINECONE_UPSERT_BATCH = 100;
-const PAGE_SIZE = 500;
+const DEFAULT_LIMIT = 200000;
+/** OpenAI allows up to 2048 inputs per request; larger batches = fewer round-trips. */
+const EMBED_BATCH = 200;
+const PINECONE_UPSERT_BATCH = 200;
+const PAGE_SIZE = 1000;
+/** Run this many embed requests in parallel per namespace (stay under OpenAI RPM). */
+const EMBED_CONCURRENCY = 3;
 
 const NAMESPACES = { name: "name", categories: "categories", brand: "brand" };
 
@@ -84,17 +87,32 @@ async function embedBatch(texts) {
   return ordered.map((d) => d.embedding);
 }
 
-async function upsertToNamespace(namespace, pairs) {
+/** Process pairs in parallel embed batches, then upsert to namespace. */
+async function embedAndUpsertNamespace(namespace, pairs) {
   if (pairs.length === 0) return;
-  const texts = pairs.map((p) => p.text);
-  const embeddings = await embedBatch(texts);
-  for (let k = 0; k < pairs.length; k += PINECONE_UPSERT_BATCH) {
-    const batch = pairs.slice(k, k + PINECONE_UPSERT_BATCH).map((p, j) => ({
-      id: String(p.id),
-      values: embeddings[k + j] ?? [],
-      metadata: {},
-    }));
-    await index.namespace(namespace).upsert(batch);
+  const ns = index.namespace(namespace);
+  for (let i = 0; i < pairs.length; i += EMBED_BATCH * EMBED_CONCURRENCY) {
+    const chunkGroup = [];
+    for (let c = 0; c < EMBED_CONCURRENCY && i + c * EMBED_BATCH < pairs.length; c++) {
+      const start = i + c * EMBED_BATCH;
+      chunkGroup.push(pairs.slice(start, start + EMBED_BATCH));
+    }
+    const results = await Promise.all(
+      chunkGroup.map(async (chunk) => {
+        if (chunk.length === 0) return [];
+        const texts = chunk.map((p) => p.text);
+        return embedBatch(texts).then((embs) => chunk.map((p, j) => ({ ...p, embedding: embs[j] ?? [] })));
+      })
+    );
+    const flat = results.flat();
+    for (let k = 0; k < flat.length; k += PINECONE_UPSERT_BATCH) {
+      const batch = flat.slice(k, k + PINECONE_UPSERT_BATCH).map((p) => ({
+        id: String(p.id),
+        values: p.embedding ?? [],
+        metadata: {},
+      }));
+      await ns.upsert({ records: batch });
+    }
   }
 }
 
@@ -143,53 +161,13 @@ async function main() {
     }
 
     try {
-      if (namePairs.length > 0) {
-        for (let i = 0; i < namePairs.length; i += EMBED_BATCH) {
-          const chunk = namePairs.slice(i, i + EMBED_BATCH);
-          const texts = chunk.map((p) => p.text);
-          const embeddings = await embedBatch(texts);
-          for (let k = 0; k < chunk.length; k += PINECONE_UPSERT_BATCH) {
-            const batch = chunk.slice(k, k + PINECONE_UPSERT_BATCH).map((p, j) => ({
-              id: String(p.id),
-              values: embeddings[k + j] ?? [],
-              metadata: {},
-            }));
-            await index.namespace(NAMESPACES.name).upsert({ records: batch });
-          }
-        }
-      }
-      if (catPairs.length > 0) {
-        for (let i = 0; i < catPairs.length; i += EMBED_BATCH) {
-          const chunk = catPairs.slice(i, i + EMBED_BATCH);
-          const texts = chunk.map((p) => p.text);
-          const embeddings = await embedBatch(texts);
-          for (let k = 0; k < chunk.length; k += PINECONE_UPSERT_BATCH) {
-            const batch = chunk.slice(k, k + PINECONE_UPSERT_BATCH).map((p, j) => ({
-              id: String(p.id),
-              values: embeddings[k + j] ?? [],
-              metadata: {},
-            }));
-            await index.namespace(NAMESPACES.categories).upsert({ records: batch });
-          }
-        }
-      }
-      if (brandPairs.length > 0) {
-        for (let i = 0; i < brandPairs.length; i += EMBED_BATCH) {
-          const chunk = brandPairs.slice(i, i + EMBED_BATCH);
-          const texts = chunk.map((p) => p.text);
-          const embeddings = await embedBatch(texts);
-          for (let k = 0; k < chunk.length; k += PINECONE_UPSERT_BATCH) {
-            const batch = chunk.slice(k, k + PINECONE_UPSERT_BATCH).map((p, j) => ({
-              id: String(p.id),
-              values: embeddings[k + j] ?? [],
-              metadata: {},
-            }));
-            await index.namespace(NAMESPACES.brand).upsert({ records: batch });
-          }
-        }
-      }
+      await Promise.all([
+        embedAndUpsertNamespace(NAMESPACES.name, namePairs),
+        embedAndUpsertNamespace(NAMESPACES.categories, catPairs),
+        embedAndUpsertNamespace(NAMESPACES.brand, brandPairs),
+      ]);
       processed += items.length;
-      if (processed % 500 === 0 || processed === items.length) {
+      if (processed % 2000 === 0 || processed === items.length) {
         console.log(`Processed ${processed} products (name/cat/brand vectors).`);
       }
     } catch (e) {

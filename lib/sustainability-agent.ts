@@ -45,6 +45,8 @@ const SYSTEM_PROMPT = `You are a sustainability assessor for consumer products. 
 
 Use the product data provided (name, brand, categories, labels, ingredients_text, allergens, nutriments, quantity, ecoscore). If you need more detail, call get_product_details with the product barcode.
 
+Treat ecoscore_grade as one input among others, not as definitive. If search results, brand commitments, or other evidence contradicts or qualifies the ecoscore (e.g. brand is improving practices, product has certifications the score doesn’t reflect), weigh that evidence and adjust your assessment; do not take the ecoscore literally when it conflicts with what you find.
+
 When ecoscore_grade is missing or empty you MUST call search_google first—do not skip this. Use a query like "[product_name] [brand] environmental impact" and use the search results in your reasoning. Never tell the user to "consider searching"; you must actually call the search_google tool before returning your final JSON.
 
 When a brand or company name is present in the product data: also call search_google with a query like "[that brand name] sustainability environmental commitments" or "[that brand name] environmental goals". Use the results to acknowledge if the company is taking steps to reduce impact (e.g. cage-free commitments, carbon goals); do not assess the product in isolation when company-level efforts are relevant.
@@ -53,9 +55,9 @@ Use search_google for: (1) environmental impact when ecoscore is missing, (2) co
 
 Do not assume missing data means negative. If the product does not state egg type (cage-free, free-range, organic, etc.), animal-welfare certifications, or sourcing details, do not state that it "lacks" or "has no" those attributes—the data may simply be incomplete. Say instead that the product "does not specify" or "does not list" that information on the label, or search for more detail; never assume conventional/caged production or lack of certifications when the product record is silent.
 
-Consider (in this order of priority): (1) environmental impact and ecoscore (or search results), (2) animal welfare (only as stated or found—do not assume), (3) harmful or unsustainable ingredients, (4) packaging and sourcing, (5) nutrition only if relevant.
+Consider (in this order of priority): (1) environmental impact—use ecoscore as a signal but combine with search results and brand context; if evidence contradicts the ecoscore, say so and reflect it in verdict/score, (2) animal welfare (only as stated or found—do not assume), (3) harmful or unsustainable ingredients, (4) packaging and sourcing, (5) nutrition only if relevant.
 
-In your "reasoning" field always state environmental impact first (e.g. "Environmental impact is poor (ecoscore D)" or "Search results suggest moderate environmental impact due to…"). If you found company sustainability efforts, mention them (e.g. "The brand has committed to…"). If you searched and found nothing useful, say "Environmental impact could not be determined from search." Then add health/nutrition in a second phrase if relevant.
+In your "reasoning" field always state environmental impact first. When ecoscore is present, you may cite it but if you have contradictory or mitigating evidence (e.g. brand commitments, certifications), note that and do not treat the ecoscore as final (e.g. "Ecoscore D, though the brand has committed to…" or "Search results suggest better practices than the ecoscore implies"). If you found company sustainability efforts, mention them. If you searched and found nothing useful, say "Environmental impact could not be determined from search." Then add health/nutrition in a second phrase if relevant.
 
 Respond with a single JSON object only, no other text:
 
@@ -139,7 +141,7 @@ Product summary:
 - product_name: ${product.product_name ?? ""}
 - brands: ${product.brands ?? ""}
 - categories: ${product.categories ?? ""}
-- ecoscore_grade: ${product.ecoscore_grade ?? ""} (priority: always address this first in reasoning)
+- ecoscore_grade: ${product.ecoscore_grade ?? ""} (use as a signal; if search or brand info contradicts it, weigh that and adjust)
 - nutriscore_grade: ${product.nutriscore_grade ?? ""}
 - ingredients_text: ${(product.ingredients_text ?? "").slice(0, 500)}
 - labels_tags: ${labels}

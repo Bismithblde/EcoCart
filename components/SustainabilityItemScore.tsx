@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ShoppingListSustainability } from "@/lib/shopping-list";
+import { AssessmentProgress } from "@/components/AssessmentProgress";
+import { ASSESSMENT_PROGRESS_STEPS } from "@/hooks/useAnalyzeSustainability";
 
 interface SustainabilityItemScoreProps {
   sustainability: ShoppingListSustainability | null;
@@ -22,11 +24,25 @@ export function SustainabilityItemScore({
   error = null,
 }: SustainabilityItemScoreProps) {
   const [expanded, setExpanded] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (!loading) {
+      setStepIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setStepIndex((i) => (i + 1) % ASSESSMENT_PROGRESS_STEPS.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  const progressStep = ASSESSMENT_PROGRESS_STEPS[stepIndex] ?? ASSESSMENT_PROGRESS_STEPS[0];
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2">
       {loading && (
-        <span className="text-xs text-gray-500 dark:text-gray-400">Scoring…</span>
+        <AssessmentProgress step={progressStep} variant="compact" />
       )}
       {error && !loading && (
         <span className="text-xs text-red-600 dark:text-red-400" title={error}>

@@ -10,41 +10,14 @@ import BetterChoiceCard from "@/components/BetterChoiceCard";
 import { AssessmentProgress } from "@/components/AssessmentProgress";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSearch, type SearchResult, type SearchWeights, type SearchRanking } from "@/hooks/useSearch";
+import { useSearch, type SearchResult } from "@/hooks/useSearch";
 import { useAnalyzeSustainability } from "@/hooks/useAnalyzeSustainability";
 import { useBetterAlternatives } from "@/hooks/useBetterAlternatives";
-
-/** Displays weighted ranking: score = w.name×name + w.categories×cat + w.brand×brand */
-function SearchRankingEquation({
-  ranking,
-  weights,
-  className = "",
-}: {
-  ranking: SearchRanking;
-  weights: SearchWeights;
-  className?: string;
-}) {
-  const pct = (x: number) => Math.round(x * 100);
-  return (
-    <div className={`text-xs text-gray-500 dark:text-gray-400 ${className}`} title="Relevance = name×0.6 + categories×0.25 + brand×0.15">
-      <span className="font-medium text-gray-700 dark:text-gray-300">
-        Match: {pct(ranking.score)}%
-      </span>
-      <span className="mx-1.5">=</span>
-      <span>
-        {weights.name}×{pct(ranking.nameScore)}% + {weights.categories}×{pct(ranking.catScore)}% + {weights.brand}×{pct(ranking.brandScore)}%
-      </span>
-      <span className="ml-1.5 text-gray-400 dark:text-gray-500">
-        (name · category · brand)
-      </span>
-    </div>
-  );
-}
 
 export default function Home() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { results, weights, isLoading, error, search } = useSearch();
+  const { results, isLoading, error, search } = useSearch();
   const { analysis, isLoading: isAnalyzing, error: analysisError, progressStep, progressSteps, analyze } =
     useAnalyzeSustainability();
   const { alternatives: betterAlternatives, isLoading: isLoadingAlternatives, error: alternativesError, fetchAlternatives } =
@@ -184,13 +157,6 @@ export default function Home() {
                                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 line-clamp-2">
                                   {item.description}
                                 </p>
-                              )}
-                              {item.ranking && (
-                                <SearchRankingEquation
-                                  ranking={item.ranking}
-                                  weights={weights}
-                                  className="mt-2"
-                                />
                               )}
                             </button>
                           ))}

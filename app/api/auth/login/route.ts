@@ -11,6 +11,13 @@ import { getSupabase } from "@/lib/supabase/server";
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || !process.env.SUPABASE_ANON_KEY?.trim()) {
+      return NextResponse.json(
+        { error: "Supabase not configured. Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_ANON_KEY in Vercel Environment Variables." },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 
@@ -50,7 +57,14 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[auth/login]", err);
+    if (message.includes("Missing Supabase") || message.includes("env")) {
+      return NextResponse.json(
+        { error: "Supabase not configured. Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_ANON_KEY in Vercel → Project → Settings → Environment Variables." },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

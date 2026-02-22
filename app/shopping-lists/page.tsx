@@ -1,18 +1,63 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { ShoppingBag, List, Plus } from "lucide-react";
+import { ShoppingBag, List, Plus, Pencil, Trash2 } from "lucide-react";
 import { useShoppingLists } from "@/hooks/useShoppingLists";
 import { isAuthenticated } from "@/lib/auth-client";
+import type { ShoppingList } from "@/lib/shopping-list";
 
 export default function ShoppingListsPage() {
-  const { lists, isLoading, error } = useShoppingLists();
+  const { lists, isLoading, error, updateList, deleteList } = useShoppingLists();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const listCount = useMemo(() => lists.length, [lists]);
   const isEmpty = useMemo(
     () => !isLoading && !error && listCount === 0,
     [isLoading, error, listCount]
+  );
+
+  const startEdit = useCallback((list: ShoppingList) => {
+    setEditingId(list.id);
+    setEditName(list.name);
+    setActionError(null);
+  }, []);
+
+  const cancelEdit = useCallback(() => {
+    setEditingId(null);
+    setEditName("");
+    setActionError(null);
+  }, []);
+
+  const saveEdit = useCallback(
+    async (id: string) => {
+      const result = await updateList(id, editName);
+      if (result.error) {
+        setActionError(result.error);
+        return;
+      }
+      setEditingId(null);
+      setEditName("");
+      setActionError(null);
+    },
+    [editName, updateList]
+  );
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      const result = await deleteList(id);
+      if (result.error) {
+        setActionError(result.error);
+        setDeletingId(null);
+        return;
+      }
+      setDeletingId(null);
+      setActionError(null);
+    },
+    [deleteList]
   );
 
   if (!isAuthenticated()) {
@@ -105,9 +150,9 @@ export default function ShoppingListsPage() {
           </Link>
         </div>
 
-        {error && (
+        {(error || actionError) && (
           <div className="mb-6 p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-            <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+            <p className="text-red-700 dark:text-red-300 text-sm">{actionError ?? error}</p>
           </div>
         )}
 
@@ -135,20 +180,104 @@ export default function ShoppingListsPage() {
         {!isLoading && listCount > 0 && (
           <ul className="space-y-3">
             {lists.map((list) => (
-              <li key={list.id}>
-                <Link
-                  href={`/shopping-lists/${list.id}`}
-                  className="block p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
-                >
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {list.name}
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                    {list.itemCount !== undefined
-                      ? `${list.itemCount} item${list.itemCount === 1 ? "" : "s"}`
-                      : "View"}
-                  </span>
-                </Link>
+              <li
+                key={list.id}
+                className="flex items-center gap-2 p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+              >
+                {editingId === list.id ? (
+                  <div className="flex-1 flex items-center gap-2 flex-wrap">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEdit(list.id);
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                      className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      autoFocus
+                      aria-label="List name"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveEdit(list.id)}
+                      className="px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium hover:opacity-90"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : deletingId === list.id ? (
+                  <div className="flex-1 flex items-center gap-2 flex-wrap">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Delete &quot;{list.name}&quot;? This cannot be undone.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(list.id)}
+                      className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+                    >
+                      Yes, delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeletingId(null);
+                        setActionError(null);
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Link
+                      href={`/shopping-lists/${list.id}`}
+                      className="flex-1 min-w-0"
+                    >
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {list.name}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                        {list.itemCount !== undefined
+                          ? `${list.itemCount} item${list.itemCount === 1 ? "" : "s"}`
+                          : "View"}
+                      </span>
+                    </Link>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          startEdit(list);
+                        }}
+                        className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200"
+                        aria-label="Rename list"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setDeletingId(list.id);
+                          setActionError(null);
+                        }}
+                        className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                        aria-label="Delete list"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </>
+                )}
               </li>
             ))}
           </ul>

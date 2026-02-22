@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, ArrowLeft, Search, Plus } from "lucide-react";
+import { ShoppingBag, List, ArrowLeft, Search, Plus } from "lucide-react";
 import { SustainabilityItemScore } from "@/components/SustainabilityItemScore";
 import { useSearch } from "@/hooks/useSearch";
 import { useCreateList } from "@/hooks/useShoppingListMutations";
@@ -183,7 +183,7 @@ export default function ShoppingListCreatorPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-950">
         <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
           <Link
             href="/"
@@ -191,6 +191,13 @@ export default function ShoppingListCreatorPage() {
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="font-medium">Dashboard</span>
+          </Link>
+          <Link
+            href="/shopping-lists"
+            className="ml-auto flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors font-medium"
+          >
+            <List className="w-5 h-5" />
+            My Lists
           </Link>
         </nav>
       </header>

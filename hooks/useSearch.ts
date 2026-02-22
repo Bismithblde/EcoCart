@@ -1,5 +1,13 @@
 import { useState, useCallback, useRef } from "react";
 
+/** Weighted ranking: score = nameWeight×nameScore + categoriesWeight×catScore + brandWeight×brandScore */
+export interface SearchRanking {
+  score: number;
+  nameScore: number;
+  catScore: number;
+  brandScore: number;
+}
+
 export interface SearchResult {
   code: string;
   product_name: string;
@@ -13,6 +21,14 @@ export interface SearchResult {
   nutriscore_score?: number;
   image_url?: string;
   image_small_url?: string;
+  /** Relevance from vector search: weighted combination of name, categories, brand. */
+  ranking?: SearchRanking;
+}
+
+export interface SearchWeights {
+  name: number;
+  categories: number;
+  brand: number;
 }
 
 export interface SearchResponse {
@@ -20,10 +36,14 @@ export interface SearchResponse {
   count: number;
   page: number;
   page_size: number;
+  weights?: SearchWeights;
 }
+
+const DEFAULT_WEIGHTS: SearchWeights = { name: 0.6, categories: 0.25, brand: 0.15 };
 
 export function useSearch() {
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [weights, setWeights] = useState<SearchWeights>(DEFAULT_WEIGHTS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -76,15 +96,7 @@ export function useSearch() {
       if (signal.aborted) return;
 
       if (data.products && data.products.length > 0) {
-        console.log("[AddList][useSearch] Search API returned products", {
-          query: trimmedQuery,
-          count: data.products.length,
-          products: data.products.map((p) => ({
-            code: p.code,
-            product_name: p.product_name,
-            brands: p.brands,
-          })),
-        });
+        if (data.weights) setWeights(data.weights);
         setResults(data.products);
         setError(null);
       } else {
@@ -109,5 +121,5 @@ export function useSearch() {
     }
   }, []);
 
-  return { results, isLoading, error, search };
+  return { results, weights, isLoading, error, search };
 }

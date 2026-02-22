@@ -21,7 +21,7 @@ export default function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-green-50 dark:bg-gray-900">
         <div className="flex flex-col items-center gap-4">
           <svg
             className="h-8 w-8 animate-spin text-blue-600"

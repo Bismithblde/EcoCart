@@ -3,16 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
+    "dev:webpack": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "filter-csv-usa": "node scripts/filter-csv-usa.js",
+    "trim-csv-100k": "node scripts/trim-csv-to-100k.js",
+    "trim-csv-200k": "node scripts/trim-csv-to-200k.js",
+    "db:seed-products": "node scripts/seed-products-from-csv.js",
+    "db:seed-api-items": "node scripts/seed-api-items-from-csv.js",
+    "db:sync-vectors": "node scripts/sync-pinecone-vectors.js"
   },
   "dependencies": {
-    "@google/genai": "^1.42.0",
+    "@pinecone-database/pinecone": "^7.1.0",
     "@supabase/supabase-js": "^2.97.0",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
+    "openai": "^6.22.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },

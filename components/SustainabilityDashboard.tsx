@@ -72,7 +72,7 @@ function EcoScoreRing({ score }: { score: number }) {
 
 function MetricCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-lg">
+    <div className="flex items-center gap-3 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
       <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
       <div className="flex-1">
         <p className="text-sm text-gray-600 dark:text-gray-300">{label}</p>
@@ -92,7 +92,7 @@ export default function SustainabilityDashboard({
   const verdictLabel = verdict === 'good' ? 'Good' : verdict === 'moderate' ? 'Moderate' : verdict === 'poor' ? 'Poor' : null;
 
   return (
-    <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl border border-green-200 dark:border-green-800 p-8">
+    <div className="bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-800 p-8">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
         Sustainability Analysis: {productName}
       </h2>

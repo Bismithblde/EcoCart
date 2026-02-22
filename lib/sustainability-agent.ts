@@ -1,30 +1,21 @@
 /**
  * LLM agent for sustainability assessment of products.
- * Uses Google Gemini. Can call get_product_details(barcode) and search_google(query) for multi-step research.
+ * Uses OpenAI (gpt-5-mini). Can call get_product_details(barcode) and search_google(query) for multi-step research.
  */
 
-import {
-  GoogleGenAI,
-  type Content,
-  createPartFromFunctionResponse,
-  type FunctionDeclaration,
-  type GenerateContentConfig,
-  FunctionCallingConfigMode,
-  type Schema,
-  Type,
-} from "@google/genai";
+import OpenAI from "openai";
 import { lookupByBarcode } from "./openfoodfacts";
 import { searchWeb } from "./search-web";
 
-function getGeminiClient(): GoogleGenAI {
-  const key = process.env.GEMINI_API_KEY?.trim();
+function getOpenAIClient(): OpenAI {
+  const key = process.env.OPENAI_API_KEY?.trim();
   if (!key) {
-    throw new Error("GEMINI_API_KEY is required for sustainability assessment");
+    throw new Error("OPENAI_API_KEY is required for sustainability assessment");
   }
-  return new GoogleGenAI({ apiKey: key });
+  return new OpenAI({ apiKey: key });
 }
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gpt-5-mini";
 const MAX_TOOL_TURNS = 5;
 
 export interface ProductSummary {
@@ -50,65 +41,67 @@ export interface SustainabilityAssessment {
   better_alternatives: string[];
 }
 
-const SYSTEM_PROMPT = `You are a sustainability assessor for consumer products. Use the product data provided (name, brand, categories, labels, ingredients_text, allergens, nutriments, quantity, ecoscore). If you need more detail, call get_product_details with the product barcode.
+const SYSTEM_PROMPT = `You are a sustainability assessor for consumer products. Environmental impact is the top priority; health/nutrition is secondary.
 
-Use multi-step Google search when useful: call search_google with a query string to look up real-world information.
-- Prefer searching "product name" + "environment" or "environmental impact" first.
-- Search specific ingredients for environmental toxicity, health concerns, or unethical sourcing when ingredients are available.
-- Search brand or category only when you need more context.
-- Do not search for every field; use product data and ecoscore when already provided.
+Use the product data provided (name, brand, categories, labels, ingredients_text, allergens, nutriments, quantity, ecoscore). If you need more detail, call get_product_details with the product barcode.
 
-Consider: environmental impact, animal welfare (e.g. cage-free vs pasture-raised), harmful or unsustainable ingredients (e.g. palm oil, certain chemicals), packaging, and sourcing. Then respond with a single JSON object only, no other text:
+When ecoscore_grade is missing or empty you MUST call search_google first—do not skip this. Use a query like "[product_name] [brand] environmental impact" and use the search results in your reasoning. Never tell the user to "consider searching"; you must actually call the search_google tool before returning your final JSON.
 
-{"verdict":"good"|"moderate"|"poor","score":<0-100>,"reasoning":"<1-2 sentences>","better_alternatives":["<short suggestion>",...]}
+When a brand or company name is present in the product data: also call search_google with a query like "[that brand name] sustainability environmental commitments" or "[that brand name] environmental goals". Use the results to acknowledge if the company is taking steps to reduce impact (e.g. cage-free commitments, carbon goals); do not assess the product in isolation when company-level efforts are relevant.
+
+Use search_google for: (1) environmental impact when ecoscore is missing, (2) company/brand sustainability efforts when a brand is present, (3) specific ingredients' environmental or health concerns when needed, (4) brand/category context only when needed. Do not search for every field; use product data when already provided.
+
+Do not assume missing data means negative. If the product does not state egg type (cage-free, free-range, organic, etc.), animal-welfare certifications, or sourcing details, do not state that it "lacks" or "has no" those attributes—the data may simply be incomplete. Say instead that the product "does not specify" or "does not list" that information on the label, or search for more detail; never assume conventional/caged production or lack of certifications when the product record is silent.
+
+Consider (in this order of priority): (1) environmental impact and ecoscore (or search results), (2) animal welfare (only as stated or found—do not assume), (3) harmful or unsustainable ingredients, (4) packaging and sourcing, (5) nutrition only if relevant.
+
+In your "reasoning" field always state environmental impact first (e.g. "Environmental impact is poor (ecoscore D)" or "Search results suggest moderate environmental impact due to…"). If you found company sustainability efforts, mention them (e.g. "The brand has committed to…"). If you searched and found nothing useful, say "Environmental impact could not be determined from search." Then add health/nutrition in a second phrase if relevant.
+
+Respond with a single JSON object only, no other text:
+
+{"verdict":"good"|"moderate"|"poor","score":<0-100>,"reasoning":"<1-2 sentences: environmental impact first, then other factors>","better_alternatives":["<short suggestion>",...]}
 
 Examples: cage-free eggs → good but not perfect (pasture-raised is better); Dove (soap) → often poor due to ingredients; organic vegetables → good.`;
 
-const getProductDetailsDeclaration: FunctionDeclaration = {
-  name: "get_product_details",
-  description:
-    "Fetch full product data (ingredients, labels, additives, ecoscore, nutriscore, etc.) by barcode from Open Food Facts. Call this when you need more detail to assess sustainability (e.g. full ingredients list, specific labels).",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      barcode: {
-        type: Type.STRING,
-        description: "Product barcode (e.g. from product code)",
+const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "get_product_details",
+      description:
+        "Fetch full product data (ingredients, labels, additives, ecoscore, nutriscore, etc.) by barcode from Open Food Facts. Call this when you need more detail to assess sustainability (e.g. full ingredients list, specific labels).",
+      parameters: {
+        type: "object",
+        properties: {
+          barcode: {
+            type: "string",
+            description: "Product barcode (e.g. from product code)",
+          },
+        },
+        required: ["barcode"],
       },
-    },
-    required: ["barcode"],
-  } as Schema,
-};
-
-const searchGoogleDeclaration: FunctionDeclaration = {
-  name: "search_google",
-  description:
-    "Run a Google search and get a summary of results. Use for product environmental impact, ingredient toxicity or unethical sourcing, or brand/category context. Pass a single search query string.",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      query: {
-        type: Type.STRING,
-        description: "Search query (e.g. 'product name environmental impact', 'palm oil sustainability')",
-      },
-    },
-    required: ["query"],
-  } as Schema,
-};
-
-const TOOLS_CONFIG: GenerateContentConfig = {
-  systemInstruction: SYSTEM_PROMPT,
-  tools: [
-    {
-      functionDeclarations: [getProductDetailsDeclaration, searchGoogleDeclaration],
-    },
-  ],
-  toolConfig: {
-    functionCallingConfig: {
-      mode: FunctionCallingConfigMode.AUTO,
     },
   },
-};
+  {
+    type: "function",
+    function: {
+      name: "search_google",
+      description:
+        "Run a Google search and get a summary of results. REQUIRED when ecoscore_grade is missing: call with a query like 'product name brand environmental impact'. When a brand is present, also search for that brand's sustainability (e.g. '<brand name> sustainability environmental'). Use for ingredient toxicity, unethical sourcing, or brand context. Pass a single search query string.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description:
+              "Search query (e.g. 'product name environmental impact', '<brand> sustainability environmental', 'palm oil sustainability')",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
+];
 
 function buildUserMessage(product: ProductSummary): string {
   const labels = Array.isArray(product.labels_tags)
@@ -133,14 +126,20 @@ function buildUserMessage(product: ProductSummary): string {
       : "";
   const quantityStr = product.quantity ?? "";
 
-  return `Assess this product. Respond with only the JSON object.
+  const hasEcoscore = product.ecoscore_grade != null && String(product.ecoscore_grade).trim() !== "";
+  const hasBrand = product.brands != null && String(product.brands).trim() !== "";
+  return `Assess this product. Environmental impact is the main priority; state it first in your reasoning.
+${!hasEcoscore ? "ecoscore_grade is MISSING. You MUST call search_google with a query like '" + (product.product_name ?? "") + " " + (product.brands ?? "") + " environmental impact' (or similar) BEFORE returning your JSON. Use the search results in your reasoning. Do not return JSON that says 'consider searching'—you must search first." : ""}
+${hasBrand ? "A brand is given. Also call search_google for that brand's sustainability (e.g. brand name + ' sustainability environmental') and mention any relevant commitments in your reasoning." : ""}
+Do not assume missing labels (e.g. cage-free, organic) mean the product lacks them—say 'does not specify' if the data is silent.
+Respond with only the JSON object when done.
 
 Product summary:
 - code: ${product.code}
 - product_name: ${product.product_name ?? ""}
 - brands: ${product.brands ?? ""}
 - categories: ${product.categories ?? ""}
-- ecoscore_grade: ${product.ecoscore_grade ?? ""}
+- ecoscore_grade: ${product.ecoscore_grade ?? ""} (priority: always address this first in reasoning)
 - nutriscore_grade: ${product.nutriscore_grade ?? ""}
 - ingredients_text: ${(product.ingredients_text ?? "").slice(0, 500)}
 - labels_tags: ${labels}
@@ -177,69 +176,79 @@ function parseAssessment(content: string | null): SustainabilityAssessment | nul
 
 const ASSESSMENT_ERROR_PREFIX = "Sustainability assessment failed: ";
 
+type Message =
+  | OpenAI.Chat.Completions.ChatCompletionMessageParam
+  | OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam;
+
 /**
  * Run the sustainability agent on one product. May call Open Food Facts via get_product_details.
  */
 export async function assessProduct(product: ProductSummary): Promise<SustainabilityAssessment> {
   try {
-    const ai = getGeminiClient();
-    const contents: Content[] = [
-      { role: "user", parts: [{ text: buildUserMessage(product) }] },
+    const client = getOpenAIClient();
+    const messages: Message[] = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: buildUserMessage(product) },
     ];
 
     let turn = 0;
-    let lastText: string | undefined;
+    let lastContent: string | null = null;
 
     while (turn <= MAX_TOOL_TURNS) {
-      const response = await ai.models.generateContent({
+      const response = await client.chat.completions.create({
         model: MODEL,
-        contents,
-        config: TOOLS_CONFIG,
+        messages,
+        tools: TOOLS,
+        tool_choice: "auto",
       });
 
-      lastText = response.text ?? undefined;
+      const choice = response.choices?.[0];
+      const msg = choice?.message;
+      lastContent = msg?.content ?? null;
 
-      const functionCalls = response.functionCalls;
-      if (!functionCalls?.length) {
-        const assessment = parseAssessment(lastText ?? null);
+      const toolCalls = msg?.tool_calls;
+      if (!toolCalls?.length) {
+        const assessment = parseAssessment(lastContent);
         if (assessment) return assessment;
         throw new Error("Agent did not return valid assessment JSON");
       }
 
-      const candidate = response.candidates?.[0];
-      const modelContent = candidate?.content;
-      if (modelContent?.parts?.length) {
-        contents.push({ role: "model", parts: modelContent.parts });
-      }
+      messages.push(msg as OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam);
 
-      const resultParts = [];
-      for (const fc of functionCalls) {
-        const fcId = fc.id ?? "";
-        const fcName = fc.name ?? "";
+      const toolResults: OpenAI.Chat.Completions.ChatCompletionToolMessageParam[] = [];
+      for (const tc of toolCalls) {
+        const id = tc.id;
+        const name = tc.function?.name ?? "";
+        const args = (() => {
+          try {
+            return typeof tc.function?.arguments === "string"
+              ? (JSON.parse(tc.function.arguments) as Record<string, unknown>)
+              : {};
+          } catch {
+            return {};
+          }
+        })();
 
-        if (fcName === "get_product_details") {
-          const barcode = typeof fc.args?.barcode === "string" ? fc.args.barcode : product.code;
+        if (name === "get_product_details") {
+          const barcode = typeof args.barcode === "string" ? args.barcode : product.code;
           const details = await lookupByBarcode(barcode);
-          const toolResult = details != null ? JSON.stringify(details) : "Product not found.";
-          resultParts.push(
-            createPartFromFunctionResponse(fcId, fcName, { result: toolResult })
-          );
-        } else if (fcName === "search_google") {
-          const query = typeof fc.args?.query === "string" ? fc.args.query : "";
-          const toolResult = await searchWeb(query);
-          resultParts.push(
-            createPartFromFunctionResponse(fcId, fcName, { result: toolResult })
-          );
+          const result = details != null ? JSON.stringify(details) : "Product not found.";
+          toolResults.push({ role: "tool", tool_call_id: id, content: result });
+        } else if (name === "search_google") {
+          const query = typeof args.query === "string" ? args.query : "";
+          const result = await searchWeb(query);
+          toolResults.push({ role: "tool", tool_call_id: id, content: result });
         }
       }
-      if (resultParts.length) {
-        contents.push({ role: "user", parts: resultParts });
+
+      for (const tr of toolResults) {
+        messages.push(tr);
       }
 
       turn++;
     }
 
-    const assessment = parseAssessment(lastText ?? null);
+    const assessment = parseAssessment(lastContent);
     if (assessment) return assessment;
     throw new Error("Agent exceeded tool turns without valid assessment JSON");
   } catch (err) {

@@ -3,9 +3,9 @@ import { assessProduct, type ProductSummary } from "@/lib/sustainability-agent";
 
 const MAX_PRODUCTS = 10;
 
-function checkGeminiKey(): void {
-  if (!process.env.GEMINI_API_KEY?.trim()) {
-    throw new Error("GEMINI_API_KEY is required for sustainability assessment");
+function checkOpenAIKey(): void {
+  if (!process.env.OPENAI_API_KEY?.trim()) {
+    throw new Error("OPENAI_API_KEY is required for sustainability assessment");
   }
 }
 
@@ -13,14 +13,14 @@ function checkGeminiKey(): void {
  * POST /api/sustainability/assess
  *
  * Assess sustainability of each product using an LLM agent. The agent may call
- * Open Food Facts (get_product_details) for more data. Requires GEMINI_API_KEY.
+ * Open Food Facts (get_product_details) for more data. Requires OPENAI_API_KEY.
  *
  * Body: { products: Array<{ code, product_name?, brands?, ... }> }
  * Returns: { products: [...] } with sustainability_assessment on each item.
  */
 export async function POST(request: NextRequest) {
   try {
-    checkGeminiKey();
+    checkOpenAIKey();
     const body = await request.json();
     const raw = body?.products;
 
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     const status =
-      message.includes("GEMINI_API_KEY") ? 503 : 500;
+      message.includes("OPENAI_API_KEY") ? 503 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

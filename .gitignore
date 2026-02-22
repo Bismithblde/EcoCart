@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+en.openfoodfacts.org.products.usa.csv
+en.openfoodfacts.org.products.csv

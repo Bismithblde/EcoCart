@@ -66,7 +66,7 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-950">
         <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
           <Link
             href="/"
@@ -85,7 +85,7 @@ export default function SignupPage() {
               Create your account
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Join EcoCart and start making sustainable choices
+              Join ECOCART and start making sustainable choices
             </p>
           </div>
 

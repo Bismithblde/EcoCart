@@ -17,12 +17,12 @@ Add these to `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
-GEMINI_API_KEY=your-gemini-api-key
+OPENAI_API_KEY=your-openai-api-key
 SERPER_API_KEY=your-serper-api-key
 ```
 
 - Supabase: get values from [Supabase Dashboard](https://supabase.com/dashboard) → your project → Settings → API.
-- **GEMINI_API_KEY** is required for sustainability assessment (`POST /api/sustainability/assess`); get an API key from [Google AI Studio](https://aistudio.google.com/apikey).
+- **OPENAI_API_KEY** is required for product search (embeddings) and sustainability assessment (`POST /api/sustainability/assess`, better alternatives); get an API key from [OpenAI](https://platform.openai.com/api-keys). The app uses gpt-5-mini for the sustainability agent.
 - **SERPER_API_KEY** is optional but recommended for sustainability assessment; the LLM uses it for multi-step web search (product+environment, ingredients). Get a key at [serper.dev](https://serper.dev). If unset, web search is disabled and the agent still works with Open Food Facts only.
 
 ---
@@ -91,56 +91,54 @@ Create a new account.
 
 ---
 
-## Product Search (Open Food Facts)
+## Product Search (Semantic / Vector)
 
-Search uses the [Open Food Facts](https://world.openfoodfacts.org) API. No API key needed.  
-**Rate limit:** 10 search requests per minute.
+Search uses **semantic search**: the query is embedded with [Featherless](https://featherless.ai) (model `IEITYuan/Yuan-embedding-2.0-en`), [Pinecone](https://www.pinecone.io/) returns the top similar product IDs, and full product data is loaded from the master table (`api_items` or `products`) in Supabase.
+
+**Required env:** `FEATHERLESS_API_KEY`, `PINECONE_API_KEY`. Optional: `PINECONE_INDEX_NAME` (default: `hopperhacks`), `MASTER_TABLE` (default: `api_items`; use `products` to read from the legacy products table).
+
+**Sync vectors:** After seeding the master table from CSV, run `npm run db:sync-vectors` to embed product_name + brands + categories + labels and upsert to Pinecone (batch insertion to avoid timeouts).
 
 ---
 
 ### GET `/api/search`
 
-Search for food products by keyword.
+Search for food products by keyword (product name or category). Semantic search returns the most relevant products by meaning.
 
 **Query parameters:**
 
 | Param     | Required | Description                             |
 | --------- | -------- | --------------------------------------- |
-| q or s    | Yes      | Search keywords (e.g. eggs, gum)        |
-| brand     | No       | Filter by brand                         |
-| country   | No       | Filter by country (e.g. united-states)  |
+| q or s    | Yes      | Search keywords (e.g. eggs, organic milk) |
 | page      | No       | Page number (default: 1)                |
 | page_size | No       | Results per page (default: 24, max 100) |
 
-**Example:** `GET /api/search?q=eggs&country=united-states`
+**Example:** `GET /api/search?q=eggs&page_size=12`
 
 **Success (200):**
 
 ```json
 {
-  "count": 450,
+  "count": 12,
   "page": 1,
-  "page_size": 24,
+  "page_size": 12,
   "products": [
     {
       "code": "0715141514643",
       "product_name": "Eggland's Best Cage Free Eggs",
       "brands": "Eggland's Best",
       "categories": "en:eggs",
-      "nutriscore_grade": "a",
-      "nutriscore_score": -1,
+      "description": "en:eggs • Organic",
       "ecoscore_grade": "b",
       "ecoscore_score": 67,
-      "nova_group": 1,
-      "ingredients_text": "",
-      "image_url": "https://...",
-      "image_small_url": "https://..."
+      "nutriscore_grade": "a",
+      "nutriscore_score": -1
     }
   ]
 }
 ```
 
-Results are ordered to favor direct matches (e.g. whole eggs before mayonnaise when searching "eggs").
+Results are ordered by vector similarity (semantic match) to the query.
 
 ---
 
@@ -188,7 +186,7 @@ Same search as `/api/search`, with extra fields for sustainability/health classi
 
 ## Sustainability assessment
 
-The sustainability assessor uses an LLM (Google Gemini) to evaluate products. The agent may call Open Food Facts via a tool (`get_product_details`) to fetch full product data (ingredients, labels, etc.) when needed. **GEMINI_API_KEY** is required.
+The sustainability assessor uses an LLM (OpenAI gpt-5-mini) to evaluate products. The agent may call Open Food Facts via a tool (`get_product_details`) to fetch full product data (ingredients, labels, etc.) when needed. **OPENAI_API_KEY** is required.
 
 ---
 
@@ -249,7 +247,7 @@ Each product should include at least `code` (barcode). Recommended: `product_nam
 
 If assessment fails for a single product, that item’s `sustainability_assessment` will be `{ "error": "..." }` instead; other products are still returned.
 
-**Errors:** 400 (missing or empty `products`), 500 (server error), 503 (GEMINI_API_KEY missing or invalid).
+**Errors:** 400 (missing or empty `products`), 500 (server error), 503 (OPENAI_API_KEY missing or invalid).
 
 ---
 
@@ -529,6 +527,6 @@ Common status codes:
 - **404** – Not found (e.g. shopping list item)
 - **500** – Internal server error
 - **502** – Upstream service error (e.g. Open Food Facts timeout)
-- **503** – Service unavailable (e.g. GEMINI_API_KEY missing for sustainability assessment)
+- **503** – Service unavailable (e.g. OPENAI_API_KEY missing for sustainability assessment)
 
 502 responses include retries and clearer messages when Open Food Facts is unavailable.

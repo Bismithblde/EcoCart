@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ShoppingBag, Plus } from "lucide-react";
+import { ShoppingBag, List } from "lucide-react";
 import { SustainabilityItemScore } from "@/components/SustainabilityItemScore";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { useDeleteListItem } from "@/hooks/useShoppingListMutations";
@@ -32,7 +32,7 @@ export default function ShoppingListDetailPage() {
   if (!isAuthenticated()) {
     return (
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-        <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <header className="bg-white dark:bg-gray-950">
           <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
             <Link href="/" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
               <ShoppingBag className="w-5 h-5" />
@@ -52,18 +52,18 @@ export default function ShoppingListDetailPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-950">
         <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
           <Link href="/" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
             <ShoppingBag className="w-5 h-5" />
             <span className="font-medium">Dashboard</span>
           </Link>
           <Link
-            href="/shopping-list"
-            className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90"
+            href="/shopping-lists"
+            className="ml-auto flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors font-medium"
           >
-            <Plus className="w-4 h-4" />
-            New List
+            <List className="w-5 h-5" />
+            My Lists
           </Link>
         </nav>
       </header>

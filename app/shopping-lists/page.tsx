@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { ShoppingBag, Plus } from "lucide-react";
+import { ShoppingBag, List, Plus } from "lucide-react";
 import { useShoppingLists } from "@/hooks/useShoppingLists";
 import { isAuthenticated } from "@/lib/auth-client";
 
@@ -18,7 +18,7 @@ export default function ShoppingListsPage() {
   if (!isAuthenticated()) {
     return (
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-        <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <header className="bg-white dark:bg-gray-950">
           <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
             <Link
               href="/"
@@ -27,13 +27,13 @@ export default function ShoppingListsPage() {
               <ShoppingBag className="w-5 h-5" />
               <span className="font-medium">Dashboard</span>
             </Link>
-            <div className="ml-auto flex gap-4">
+            <div className="ml-auto flex items-center gap-3">
               <Link
-                href="/shopping-list"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90 transition-opacity"
+                href="/shopping-lists"
+                className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors font-medium"
               >
-                <Plus className="w-4 h-4" />
-                New List
+                <List className="w-5 h-5" />
+                My Lists
               </Link>
               <Link
                 href="/login"
@@ -66,7 +66,7 @@ export default function ShoppingListsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-950">
         <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
           <Link
             href="/"
@@ -76,11 +76,12 @@ export default function ShoppingListsPage() {
             <span className="font-medium">Dashboard</span>
           </Link>
           <Link
-            href="/shopping-list"
-            className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90 transition-opacity"
+            href="/shopping-lists"
+            aria-current="page"
+            className="ml-auto flex items-center gap-2 text-gray-900 dark:text-white font-medium"
           >
-            <Plus className="w-4 h-4" />
-            New List
+            <List className="w-5 h-5" />
+            My Lists
           </Link>
         </nav>
       </header>
@@ -95,6 +96,13 @@ export default function ShoppingListsPage() {
               {isLoading ? "…" : `${listCount} list${listCount === 1 ? "" : "s"}`}
             </p>
           </div>
+          <Link
+            href="/shopping-list"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            New list
+          </Link>
         </div>
 
         {error && (

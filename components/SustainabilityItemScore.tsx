@@ -31,6 +31,16 @@ export function SustainabilityItemScore({
       {error && !loading && (
         <span className="text-xs text-red-600 dark:text-red-400" title={error}>
           Score unavailable
+          {error.trim() && (() => {
+            const firstLine = error.split(/\r?\n/)[0].trim();
+            const excerpt = firstLine.slice(0, 60);
+            return (
+              <span className="ml-1 opacity-90">
+                ({excerpt}
+                {firstLine.length > 60 ? "…" : ""})
+              </span>
+            );
+          })()}
         </span>
       )}
       {sustainability && !loading && (

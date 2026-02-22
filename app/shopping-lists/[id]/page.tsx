@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { ShoppingBag, Plus } from "lucide-react";
 import { SustainabilityItemScore } from "@/components/SustainabilityItemScore";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { useDeleteListItem } from "@/hooks/useShoppingListMutations";
@@ -20,9 +21,9 @@ export default function ShoppingListDetailPage() {
 
   if (!id) {
     return (
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans">
+      <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
         <div className="flex-1 flex items-center justify-center px-4">
-          <p className="text-gray-600 dark:text-gray-300">Invalid list.</p>
+          <p className="text-gray-600 dark:text-gray-400">Invalid list.</p>
         </div>
       </div>
     );
@@ -30,55 +31,48 @@ export default function ShoppingListDetailPage() {
 
   if (!isAuthenticated()) {
     return (
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans">
-        <header className="border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-          <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between h-16">
-            <Link href="/" className="text-2xl font-bold text-gray-900 dark:text-white">
-              EcoCart
+      <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
+        <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
+            <Link href="/" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+              <ShoppingBag className="w-5 h-5" />
+              <span className="font-medium">Dashboard</span>
             </Link>
-            <Link href="/login" className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+            <Link href="/login" className="ml-auto px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               Sign in
             </Link>
           </nav>
         </header>
         <div className="flex-1 flex items-center justify-center px-4">
-          <p className="text-gray-600 dark:text-gray-300">
-            Sign in to view this list.
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Sign in to view this list.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 font-sans">
-      <header className="border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-        <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between h-16">
-          <Link href="/" className="text-2xl font-bold text-gray-900 dark:text-white">
-            EcoCart
+    <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
+      <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
+          <Link href="/" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <ShoppingBag className="w-5 h-5" />
+            <span className="font-medium">Dashboard</span>
           </Link>
-          <div className="flex gap-4">
-            <Link
-              href="/shopping-lists"
-              className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              My lists
-            </Link>
-            <Link
-              href="/shopping-list"
-              className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              New list
-            </Link>
-          </div>
+          <Link
+            href="/shopping-list"
+            className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90"
+          >
+            <Plus className="w-4 h-4" />
+            New List
+          </Link>
         </nav>
       </header>
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         {isLoading && <p className="text-gray-500 dark:text-gray-400">Loading…</p>}
         {error && (
-          <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg mb-4">
-            <p className="text-red-700 dark:text-red-300">{error}</p>
+          <div className="p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 mb-4">
+            <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
           </div>
         )}
         {!isLoading && list && (
@@ -89,7 +83,7 @@ export default function ShoppingListDetailPage() {
               </h1>
               <Link
                 href="/shopping-list"
-                className="text-sm font-medium text-green-600 dark:text-green-400 hover:underline"
+                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 Add more (new list)
               </Link>
@@ -104,7 +98,7 @@ export default function ShoppingListDetailPage() {
                 {items.map((item) => (
                   <li
                     key={item.id}
-                    className="flex items-start justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
+                    className="flex items-start justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-gray-900 dark:text-white">

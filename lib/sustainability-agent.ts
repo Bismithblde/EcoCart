@@ -175,68 +175,77 @@ function parseAssessment(content: string | null): SustainabilityAssessment | nul
   }
 }
 
+const ASSESSMENT_ERROR_PREFIX = "Sustainability assessment failed: ";
+
 /**
  * Run the sustainability agent on one product. May call Open Food Facts via get_product_details.
  */
 export async function assessProduct(product: ProductSummary): Promise<SustainabilityAssessment> {
-  const ai = getGeminiClient();
-  const contents: Content[] = [
-    { role: "user", parts: [{ text: buildUserMessage(product) }] },
-  ];
+  try {
+    const ai = getGeminiClient();
+    const contents: Content[] = [
+      { role: "user", parts: [{ text: buildUserMessage(product) }] },
+    ];
 
-  let turn = 0;
-  let lastText: string | undefined;
+    let turn = 0;
+    let lastText: string | undefined;
 
-  while (turn <= MAX_TOOL_TURNS) {
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents,
-      config: TOOLS_CONFIG,
-    });
+    while (turn <= MAX_TOOL_TURNS) {
+      const response = await ai.models.generateContent({
+        model: MODEL,
+        contents,
+        config: TOOLS_CONFIG,
+      });
 
-    lastText = response.text ?? undefined;
+      lastText = response.text ?? undefined;
 
-    const functionCalls = response.functionCalls;
-    if (!functionCalls?.length) {
-      const assessment = parseAssessment(lastText ?? null);
-      if (assessment) return assessment;
-      throw new Error("Agent did not return valid assessment JSON");
-    }
-
-    const candidate = response.candidates?.[0];
-    const modelContent = candidate?.content;
-    if (modelContent?.parts?.length) {
-      contents.push({ role: "model", parts: modelContent.parts });
-    }
-
-    const resultParts = [];
-    for (const fc of functionCalls) {
-      const fcId = fc.id ?? "";
-      const fcName = fc.name ?? "";
-
-      if (fcName === "get_product_details") {
-        const barcode = typeof fc.args?.barcode === "string" ? fc.args.barcode : product.code;
-        const details = await lookupByBarcode(barcode);
-        const toolResult = details != null ? JSON.stringify(details) : "Product not found.";
-        resultParts.push(
-          createPartFromFunctionResponse(fcId, fcName, { result: toolResult })
-        );
-      } else if (fcName === "search_google") {
-        const query = typeof fc.args?.query === "string" ? fc.args.query : "";
-        const toolResult = await searchWeb(query);
-        resultParts.push(
-          createPartFromFunctionResponse(fcId, fcName, { result: toolResult })
-        );
+      const functionCalls = response.functionCalls;
+      if (!functionCalls?.length) {
+        const assessment = parseAssessment(lastText ?? null);
+        if (assessment) return assessment;
+        throw new Error("Agent did not return valid assessment JSON");
       }
-    }
-    if (resultParts.length) {
-      contents.push({ role: "user", parts: resultParts });
+
+      const candidate = response.candidates?.[0];
+      const modelContent = candidate?.content;
+      if (modelContent?.parts?.length) {
+        contents.push({ role: "model", parts: modelContent.parts });
+      }
+
+      const resultParts = [];
+      for (const fc of functionCalls) {
+        const fcId = fc.id ?? "";
+        const fcName = fc.name ?? "";
+
+        if (fcName === "get_product_details") {
+          const barcode = typeof fc.args?.barcode === "string" ? fc.args.barcode : product.code;
+          const details = await lookupByBarcode(barcode);
+          const toolResult = details != null ? JSON.stringify(details) : "Product not found.";
+          resultParts.push(
+            createPartFromFunctionResponse(fcId, fcName, { result: toolResult })
+          );
+        } else if (fcName === "search_google") {
+          const query = typeof fc.args?.query === "string" ? fc.args.query : "";
+          const toolResult = await searchWeb(query);
+          resultParts.push(
+            createPartFromFunctionResponse(fcId, fcName, { result: toolResult })
+          );
+        }
+      }
+      if (resultParts.length) {
+        contents.push({ role: "user", parts: resultParts });
+      }
+
+      turn++;
     }
 
-    turn++;
+    const assessment = parseAssessment(lastText ?? null);
+    if (assessment) return assessment;
+    throw new Error("Agent exceeded tool turns without valid assessment JSON");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    throw new Error(
+      message.startsWith(ASSESSMENT_ERROR_PREFIX) ? message : ASSESSMENT_ERROR_PREFIX + message
+    );
   }
-
-  const assessment = parseAssessment(lastText ?? null);
-  if (assessment) return assessment;
-  throw new Error("Agent exceeded tool turns without valid assessment JSON");
 }

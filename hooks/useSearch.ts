@@ -76,6 +76,15 @@ export function useSearch() {
       if (signal.aborted) return;
 
       if (data.products && data.products.length > 0) {
+        console.log("[AddList][useSearch] Search API returned products", {
+          query: trimmedQuery,
+          count: data.products.length,
+          products: data.products.map((p) => ({
+            code: p.code,
+            product_name: p.product_name,
+            brands: p.brands,
+          })),
+        });
         setResults(data.products);
         setError(null);
       } else {

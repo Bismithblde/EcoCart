@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import Head from "next/head";
 
 export default function SignupPage() {
   const router = useRouter();

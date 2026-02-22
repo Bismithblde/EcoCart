@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSearch, type SearchResult } from "@/hooks/useSearch";
 import { useAnalyzeSustainability } from "@/hooks/useAnalyzeSustainability";
 import { useBetterAlternatives } from "@/hooks/useBetterAlternatives";
+import Head from "next/head";
 
 export default function Home() {
   const router = useRouter();
@@ -68,7 +69,16 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
+      <Head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap"
+        />
+      </Head>
+      <div
+        className="flex min-h-screen flex-col bg-white dark:bg-gray-950"
+        style={{ fontFamily: "'Montserrat', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto" }}
+      >
         <header className="bg-white dark:bg-gray-950">
           <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
             <Link
@@ -108,10 +118,13 @@ export default function Home() {
 
         <div className="flex flex-col items-center justify-center flex-1 px-4 pt-4 pb-12">
           <main className="w-full max-w-2xl">
-            <div className="text-center mb-12">
-              <h1 className="text-6xl md:text-8xl font-bold text-gray-900 dark:text-white tracking-[0.2em] md:tracking-[0.25em]">
-                ECOCART
-              </h1>
+            <div className="text-center mb-12 min-h-[5.5rem] flex items-center justify-center">
+              <img
+                src="/assets/ecocart-logo.png"
+                alt="EcoCart"
+                className="mx-auto w-48 h-auto"
+                style={{ display: "block" }}
+              />
             </div>
 
             <div className="rounded-2xl border-2 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-8 transition-all duration-300 ease-out hover:border-white dark:hover:border-white hover:-translate-y-0.5">

@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     };
     
     return NextResponse.json(response);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to analyze sustainability' },
       { status: 500 }

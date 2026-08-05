@@ -22,5 +22,42 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes ecocart-marquee {
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes ecocart-scan {
+  from { transform: translate3d(-2rem, 0, 0); }
+  to { transform: translate3d(90rem, 0, 0); }
+}
+
+@keyframes ecocart-mark-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ecocart-scroll-drift {
+  from { transform: translate3d(0, 0.875rem, 0); }
+  to { transform: translate3d(0, -0.875rem, 0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ecocart-marquee-track { animation: ecocart-marquee 28s linear infinite; }
+  .ecocart-scan-line { animation: ecocart-scan 8s linear infinite; will-change: transform; }
+  .ecocart-mark-spin { animation: ecocart-mark-spin 48s linear infinite; transform-origin: center; will-change: transform; }
+
+  @supports (animation-timeline: view()) {
+    .ecocart-scroll-drift {
+      animation: ecocart-scroll-drift linear both;
+      animation-range: entry 0% cover 100%;
+      animation-timeline: view();
+      will-change: transform;
+    }
+  }
 }

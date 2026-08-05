@@ -1,7 +1,5 @@
 'use client';
 
-import { Wind, Droplets, Package, MessageSquare } from 'lucide-react';
-
 interface Metrics {
   carbonFootprint: string;
   waterUsage: string;
@@ -12,155 +10,80 @@ interface SustainabilityDashboardProps {
   productName: string;
   ecoScore: number;
   metrics: Metrics;
-  /** AI reasoning for the assessment (from sustainability/assess). */
   reasoning?: string;
-  /** Verdict: good | moderate | poor */
   verdict?: 'good' | 'moderate' | 'poor';
-  /** Summary tags from the AI (e.g. no pledge, bad ingredients, unhealthy). */
   tags?: string[];
+  confidence?: 'low' | 'medium' | 'high';
+  sources?: Array<{
+    id: string;
+    title: string;
+    url: string;
+    snippet?: string;
+    kind: 'product' | 'web';
+  }>;
+  assessedAt?: string;
 }
 
-function EcoScoreRing({ score }: { score: number }) {
-  const circumference = 2 * Math.PI * 45;
-  const offset = circumference - (score / 100) * circumference;
-  
-  const getColor = () => {
-    if (score >= 80) return '#10b981'; // green
-    if (score >= 60) return '#f59e0b'; // amber
-    if (score >= 40) return '#f97316'; // orange
-    return '#ef4444'; // red
-  };
-  
-  const getScoreText = () => {
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Good';
-    if (score >= 40) return 'Fair';
-    return 'Poor';
-  };
+export default function SustainabilityDashboard({ productName, ecoScore, metrics, reasoning, verdict, tags = [], confidence, sources = [], assessedAt }: SustainabilityDashboardProps) {
+  const verdictLabel = verdict === 'good' ? 'Good' : verdict === 'moderate' ? 'Review' : verdict === 'poor' ? 'Poor' : 'Scored';
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width="120" height="120" className="mb-4">
-        <circle cx="60" cy="60" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8" />
-        <circle
-          cx="60"
-          cy="60"
-          r="45"
-          fill="none"
-          stroke={getColor()}
-          strokeWidth="8"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-          transform="rotate(-90 60 60)"
-        />
-        <text
-          x="60"
-          y="65"
-          textAnchor="middle"
-          fontSize="28"
-          fontWeight="bold"
-          fill={getColor()}
-        >
-          {score}
-        </text>
-      </svg>
-      <p className="text-lg font-semibold text-gray-900 dark:text-white">{getScoreText()}</p>
-      <p className="text-sm text-gray-600 dark:text-gray-400">Sustainability Score</p>
-    </div>
-  );
-}
-
-function MetricCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-3 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-      <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-      <div className="flex-1">
-        <p className="text-sm text-gray-600 dark:text-gray-300">{label}</p>
-        <p className="font-semibold text-gray-900 dark:text-white">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-export default function SustainabilityDashboard({
-  productName,
-  ecoScore,
-  metrics,
-  reasoning,
-  verdict,
-  tags = [],
-}: SustainabilityDashboardProps) {
-  const verdictLabel = verdict === 'good' ? 'Good' : verdict === 'moderate' ? 'Moderate' : verdict === 'poor' ? 'Poor' : null;
-
-  return (
-    <div className="bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-800 p-8">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        Sustainability Analysis: {productName}
-      </h2>
-
-      {verdictLabel && (
-        <p className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Verdict: <span className="capitalize">{verdictLabel}</span>
-        </p>
-      )}
-
-      {tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-md bg-gray-200 dark:bg-gray-600 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-200"
-            >
-              {tag.replace(/-/g, " ")}
-            </span>
-          ))}
+    <section className="border-2 border-[#111714] bg-[#fffdf5] text-[#111714]">
+      <header className="grid grid-cols-1 border-b-2 border-[#111714] sm:grid-cols-[1fr_auto]">
+        <div className="p-5 sm:p-7">
+          <p className="font-mono text-[0.68rem] font-semibold text-[#0d563f]">IMPACT RECEIPT / COMPLETE</p>
+          <h2 className="mt-3 text-3xl font-semibold leading-none tracking-[-0.05em] sm:text-4xl">{productName}</h2>
         </div>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="flex justify-center md:justify-start">
-          <EcoScoreRing score={ecoScore} />
+        <div className="flex min-w-44 items-end justify-between border-t-2 border-[#111714] bg-[#0d563f] p-5 text-white sm:border-l-2 sm:border-t-0 sm:p-7">
+          <div><p className="font-mono text-[0.62rem] font-semibold">OVERALL</p><data value={ecoScore} className="mt-2 block text-6xl font-semibold leading-none tracking-[-0.07em]">{ecoScore}</data></div>
+          <span className="font-mono text-xs font-semibold">/100</span>
         </div>
-        
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Environmental Impact
-          </h3>
-          <MetricCard
-            icon={Wind}
-            label="Carbon Footprint"
-            value={metrics.carbonFootprint}
-          />
-          <MetricCard
-            icon={Droplets}
-            label="Water Usage"
-            value={metrics.waterUsage}
-          />
-          <MetricCard
-            icon={Package}
-            label="Packaging"
-            value={metrics.packaging}
-          />
+      </header>
+      <div className="grid grid-cols-1 sm:grid-cols-4">
+        <div className="border-b-2 border-[#111714] bg-[#2148d8] p-5 text-white sm:border-b-0 sm:border-r-2">
+          <p className="font-mono text-[0.62rem] font-semibold">VERDICT</p>
+          <p className="mt-6 text-2xl font-semibold uppercase tracking-[-0.04em]">{verdictLabel}</p>
         </div>
-      </div>
-
-      {reasoning && (
-        <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex gap-3">
-          <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Assessment</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{reasoning}</p>
+        {[
+          ['CARBON', metrics.carbonFootprint],
+          ['WATER', metrics.waterUsage],
+          ['PACKAGING', metrics.packaging],
+        ].map(([label, value], index) => (
+          <div key={label} className={`p-5 sm:p-6 ${index > 0 ? 'border-t-2 border-[#111714] sm:border-l-2 sm:border-t-0' : ''}`}>
+            <p className="font-mono text-[0.62rem] font-semibold text-[#0d563f]">{label}</p>
+            <p className="mt-6 text-lg font-semibold leading-tight">{value}</p>
           </div>
-        </div>
-      )}
-
-      <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          <span className="font-semibold">Score Interpretation:</span> Products with higher eco-scores have lower environmental impact and are made with more sustainable practices.
-        </p>
+        ))}
       </div>
-    </div>
+      {tags.length > 0 ? <div className="flex flex-wrap border-t-2 border-[#111714] bg-[#dfeef2] p-3">{tags.map((tag) => <span key={tag} className="border-r-2 border-[#111714] px-3 py-1 font-mono text-[0.62rem] font-semibold uppercase last:border-r-0">{tag.replace(/-/g, ' ')}</span>)}</div> : null}
+      {reasoning ? <div className="border-t-2 border-[#111714] p-5 sm:p-7"><p className="font-mono text-[0.62rem] font-semibold">WHY THIS SCORE</p><p className="mt-3 max-w-3xl text-base leading-7">{reasoning}</p></div> : null}
+      {(confidence || sources.length > 0) ? (
+        <div className="grid grid-cols-1 border-t-2 border-[#111714] lg:grid-cols-[14rem_1fr]">
+          <div className="bg-[#dfeef2] p-5 lg:border-r-2 lg:border-[#111714] sm:p-7">
+            <p className="font-mono text-[0.62rem] font-semibold">EVIDENCE CHECK</p>
+            {confidence ? <p className="mt-4 text-xl font-semibold capitalize">{confidence} confidence</p> : null}
+            {assessedAt ? (
+              <p className="mt-2 text-sm leading-5 text-[#4c514b]">
+                Assessed {new Date(assessedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            ) : null}
+          </div>
+          <ol className="divide-y-2 divide-[#111714]">
+            {sources.map((source, index) => (
+              <li key={source.id} className="grid grid-cols-[2rem_1fr] gap-3 p-5 sm:p-6">
+                <span className="font-mono text-xs font-semibold text-[#0d563f]">{String(index + 1).padStart(2, '0')}</span>
+                <div className="min-w-0">
+                  <a href={source.url} target="_blank" rel="noreferrer" className="font-semibold underline decoration-2 underline-offset-4 transition-colors hover:text-[#2148d8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2148d8]">
+                    {source.title}
+                  </a>
+                  {source.snippet ? <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#4c514b]">{source.snippet}</p> : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+      <div className="h-3 border-t-2 border-[#111714] bg-[repeating-linear-gradient(90deg,#111714_0,#111714_3px,transparent_3px,transparent_7px)]" aria-hidden="true" />
+    </section>
   );
 }

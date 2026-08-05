@@ -18,13 +18,6 @@ export interface AuthUser {
   email: string | null;
 }
 
-interface AuthSession {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  user: AuthUser;
-}
-
 interface AuthContextValue {
   user: AuthUser | null;
   accessToken: string | null;

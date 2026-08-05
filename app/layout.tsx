@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ECOCART",
-  description: "Sustainable shopping",
+  title: "Ecocart | Know what you're buying",
+  description: "Understand product impact, compare better alternatives, and build a more informed shopping list.",
   icons: { icon: [] },
 };
 
@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

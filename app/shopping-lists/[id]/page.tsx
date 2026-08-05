@@ -2,8 +2,8 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ShoppingBag, List } from "lucide-react";
 import { SustainabilityItemScore } from "@/components/SustainabilityItemScore";
+import AppHeader from "@/components/AppHeader";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { useDeleteListItem } from "@/hooks/useShoppingListMutations";
 import { isAuthenticated } from "@/lib/auth-client";
@@ -21,9 +21,9 @@ export default function ShoppingListDetailPage() {
 
   if (!id) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
+      <div className="flex min-h-screen flex-col bg-[#dfeef2] font-sans text-[#111714]">
         <div className="flex-1 flex items-center justify-center px-4">
-          <p className="text-gray-600 dark:text-gray-400">Invalid list.</p>
+          <p className="border-2 border-[#111714] bg-[#fffdf5] p-6 font-mono text-xs font-semibold">INVALID LIST / CHECK THE URL</p>
         </div>
       </div>
     );
@@ -31,81 +31,55 @@ export default function ShoppingListDetailPage() {
 
   if (!isAuthenticated()) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-        <header className="bg-white dark:bg-gray-950">
-          <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
-            <Link href="/" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
-              <ShoppingBag className="w-5 h-5" />
-              <span className="font-medium">Dashboard</span>
-            </Link>
-            <Link href="/login" className="ml-auto px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              Sign in
-            </Link>
-          </nav>
-        </header>
+      <div className="flex min-h-screen flex-col bg-[#dfeef2] font-sans text-[#111714]">
+        <AppHeader active="lists" />
         <div className="flex-1 flex items-center justify-center px-4">
-          <p className="text-gray-600 dark:text-gray-400">Sign in to view this list.</p>
+          <div className="border-2 border-[#111714] bg-[#fffdf5] p-8"><p className="font-mono text-xs font-semibold text-[#0d563f]">LIST ARCHIVE / LOCKED</p><p className="mt-4 text-3xl font-semibold tracking-[-0.04em]">Sign in to view this list.</p><Link href="/login" className="mt-6 inline-block bg-[#0d563f] px-5 py-3 font-semibold text-white hover:bg-[#2148d8]">Sign in ↗</Link></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-      <header className="bg-white dark:bg-gray-950">
-        <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
-          <Link href="/" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-            <ShoppingBag className="w-5 h-5" />
-            <span className="font-medium">Dashboard</span>
-          </Link>
-          <Link
-            href="/shopping-lists"
-            className="ml-auto flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors font-medium"
-          >
-            <List className="w-5 h-5" />
-            My Lists
-          </Link>
-        </nav>
-      </header>
+    <div className="flex min-h-screen flex-col bg-[#dfeef2] font-sans text-[#111714]">
+      <AppHeader active="lists" />
 
-      <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
-        {isLoading && <p className="text-gray-500 dark:text-gray-400">Loading…</p>}
+      <main className="mx-auto w-full max-w-[1000px] flex-1 px-3 py-10 sm:px-5 sm:py-16">
+        {isLoading && <p className="font-mono text-xs font-semibold text-[#0d563f]">LOADING LIST...</p>}
         {error && (
-          <div className="p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 mb-4">
-            <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+          <div className="mb-4 border-2 border-[#111714] bg-[#fff4de] p-4">
+            <p className="text-sm">{error}</p>
           </div>
         )}
         {!isLoading && list && (
           <>
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="mb-10 flex items-end justify-between gap-4 border-b-2 border-[#111714] pb-7">
+              <div><p className="font-mono text-[0.68rem] font-semibold">SHOPPING LIST / {items.length} ITEMS</p><h1 className="mt-3 text-[clamp(3.5rem,8vw,6rem)] font-semibold leading-[0.88] tracking-[-0.07em]">
                 {list.name}
-              </h1>
+              </h1></div>
               <Link
                 href="/shopping-list"
-                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                className="border-2 border-[#111714] bg-[#0d563f] px-4 py-3 text-sm font-semibold text-white hover:bg-[#2148d8]"
               >
                 Add more (new list)
               </Link>
             </div>
 
             {items.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-300">
-                This list has no items.
-              </p>
+              <div className="border-2 border-[#111714] bg-[#fffdf5] p-8"><p className="font-mono text-xs font-semibold text-[#0d563f]">EMPTY RECEIPT / 000</p><p className="mt-5 text-3xl font-semibold tracking-[-0.04em]">This list has no items.</p></div>
             ) : (
-              <ul className="space-y-2">
+              <ul className="grid gap-0 border-2 border-[#111714] bg-[#111714]">
                 {items.map((item) => (
                   <li
                     key={item.id}
-                    className="flex items-start justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50"
+                    className="flex items-start justify-between gap-4 bg-[#fffdf5] p-5 sm:p-6"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="text-xl font-semibold tracking-[-0.035em]">
                         {item.productName || item.code}
                       </p>
                       {item.brands && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="mt-1 font-mono text-[0.65rem] text-[#4c514b]">
                           {item.brands}
                         </p>
                       )}
@@ -116,7 +90,7 @@ export default function ShoppingListDetailPage() {
                     <button
                       type="button"
                       onClick={() => handleDeleteItem(item.id)}
-                      className="flex-shrink-0 text-sm text-red-600 dark:text-red-400 hover:underline"
+                      className="flex-shrink-0 border-2 border-[#111714] px-3 py-2 font-mono text-[0.62rem] font-semibold hover:bg-[#111714] hover:text-white"
                     >
                       Remove
                     </button>
@@ -126,7 +100,7 @@ export default function ShoppingListDetailPage() {
             )}
           </>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -47,7 +47,6 @@ export async function upsertVectors(
   }
 }
 
-const SEARCH_NAMESPACES = ["name", "categories", "brand"] as const;
 const DEFAULT_WEIGHTS = { name: 0.6, categories: 0.25, brand: 0.15 };
 
 /**

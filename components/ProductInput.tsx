@@ -18,26 +18,26 @@ export default function ProductInput({ onSubmit, isLoading = false }: ProductInp
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="w-full">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-[1fr_auto]">
         <div>
-          <label htmlFor="product-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Search for a Product
+          <label htmlFor="product-input" className="block border-x-2 border-t-2 border-[#111714] bg-[#fffdf5] px-4 py-2 font-mono text-[0.68rem] font-semibold sm:border-r-0">
+            PRODUCT / NAME OR BARCODE
           </label>
           <input
             id="product-input"
             type="text"
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
-            placeholder="Enter a product name (e.g., organic eggs, water bottle, cotton shirt)"
-            className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 transition"
+            placeholder="Oat milk, shampoo, 0737628064502..."
+            className="min-h-16 w-full border-2 border-[#111714] bg-white px-4 py-4 text-base text-[#111714] outline-none transition-colors placeholder:text-[#727873] focus:bg-[#dfeef2] focus:ring-2 focus:ring-inset focus:ring-[#2148d8] sm:border-r-0"
             disabled={isLoading}
           />
         </div>
         <button
           type="submit"
           disabled={isLoading || !productName.trim()}
-          className="w-full px-6 py-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2"
+          className="flex min-h-16 items-center justify-center gap-2 border-2 border-t-0 border-[#111714] bg-[#0d563f] px-7 py-4 font-semibold text-white transition-colors hover:bg-[#2148d8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50 sm:self-end sm:border-t-2"
         >
           {isLoading && (
             <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -45,7 +45,7 @@ export default function ProductInput({ onSubmit, isLoading = false }: ProductInp
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           )}
-          {isLoading ? 'Searching...' : 'Search Products'}
+          {isLoading ? 'Searching...' : 'Search'} <span aria-hidden="true">↗</span>
         </button>
       </form>
     </div>

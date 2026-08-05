@@ -6,7 +6,19 @@
 
 const SERPER_BASE = "https://google.serper.dev/search";
 const TIMEOUT_MS = 10_000;
-const MAX_SNIPPETS = 8;
+const MAX_SNIPPETS = 6;
+
+export interface WebSearchResult {
+  title: string;
+  snippet: string;
+  url: string;
+}
+
+export interface WebSearchResponse {
+  query: string;
+  results: WebSearchResult[];
+  error?: string;
+}
 
 export function getSerperApiKey(): string | null {
   const key = process.env.SERPER_API_KEY?.trim();
@@ -14,18 +26,22 @@ export function getSerperApiKey(): string | null {
 }
 
 /**
- * Run a web search and return a short text summary (titles + snippets) for the LLM.
- * Returns an error message string if the key is missing or the request fails.
+ * Run a web search and retain the source URLs so assessments can cite the
+ * evidence shown to the model.
  */
-export async function searchWeb(query: string): Promise<string> {
+export async function searchWeb(query: string): Promise<WebSearchResponse> {
+  const trimmed = query.trim();
   const key = getSerperApiKey();
   if (!key) {
-    return "Error: SERPER_API_KEY is not set. Web search is disabled.";
+    return {
+      query: trimmed,
+      results: [],
+      error: "SERPER_API_KEY is not set. Web search is disabled.",
+    };
   }
 
-  const trimmed = query.trim();
   if (!trimmed) {
-    return "Error: Empty search query.";
+    return { query: trimmed, results: [], error: "Empty search query." };
   }
 
   const controller = new AbortController();
@@ -46,35 +62,41 @@ export async function searchWeb(query: string): Promise<string> {
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      return `Search failed (${res.status}): ${text.slice(0, 200)}`;
+      return {
+        query: trimmed,
+        results: [],
+        error: `Search failed (${res.status}): ${text.slice(0, 200)}`,
+      };
     }
 
     const data = (await res.json()) as {
       organic?: Array<{ title?: string; snippet?: string; link?: string }>;
     };
 
-    const organic = data.organic ?? [];
-    const parts: string[] = [];
-    for (let i = 0; i < Math.min(organic.length, MAX_SNIPPETS); i++) {
-      const o = organic[i];
-      const title = o?.title ?? "";
-      const snippet = o?.snippet ?? "";
-      if (title || snippet) {
-        parts.push(`[${i + 1}] ${title}\n${snippet}`);
-      }
-    }
+    const results = (data.organic ?? [])
+      .map((item) => ({
+        title: item.title?.trim() ?? "",
+        snippet: item.snippet?.trim() ?? "",
+        url: item.link?.trim() ?? "",
+      }))
+      .filter((item) => item.title && /^https?:\/\//i.test(item.url))
+      .slice(0, MAX_SNIPPETS);
 
-    if (parts.length === 0) {
-      return "No search results found.";
-    }
-
-    return parts.join("\n\n");
+    return {
+      query: trimmed,
+      results,
+      ...(results.length === 0 ? { error: "No search results found." } : {}),
+    };
   } catch (err) {
     clearTimeout(timeout);
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes("abort")) {
-      return "Search timed out.";
+      return { query: trimmed, results: [], error: "Search timed out." };
     }
-    return `Search error: ${message.slice(0, 150)}`;
+    return {
+      query: trimmed,
+      results: [],
+      error: `Search error: ${message.slice(0, 150)}`,
+    };
   }
 }

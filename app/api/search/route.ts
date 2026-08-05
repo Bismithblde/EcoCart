@@ -3,7 +3,6 @@ import { embedQuery } from "@/lib/embeddings";
 import { queryVectorsMultiNamespace, SEARCH_WEIGHTS } from "@/lib/pinecone";
 import { getProductsByIds, type SearchResultProduct } from "@/lib/master-products";
 
-const DEFAULT_TOP_K = 24;
 const MAX_PAGE_SIZE = 100;
 /** Over-fetch so after dedupe and brand prioritization we still have enough for the page. */
 const FETCH_MULTIPLIER = 3;

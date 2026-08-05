@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, getSupabaseForUser } from "@/lib/supabase/server";
-import { mapRowToItem, mapRowsToItems, type ShoppingListItemRow } from "@/lib/shopping-list";
+import { mapRowToItem, mapRowsToItems, sustainabilityToRowFields, type ShoppingListItemRow } from "@/lib/shopping-list";
 
 function getAccessToken(request: NextRequest): string | null {
   const auth = request.headers.get("authorization");
@@ -68,19 +68,7 @@ export async function POST(request: NextRequest) {
 
     const productName = body?.productName != null ? String(body.productName) : null;
     const brands = body?.brands != null ? String(body.brands) : null;
-    const sustainability = body?.sustainability;
-    const sustainability_verdict =
-      sustainability?.verdict && ["good", "moderate", "poor"].includes(sustainability.verdict)
-        ? sustainability.verdict
-        : null;
-    const sustainability_score =
-      typeof sustainability?.score === "number" ? sustainability.score : null;
-    const sustainability_reasoning =
-      typeof sustainability?.reasoning === "string" ? sustainability.reasoning : null;
-    const sustainability_better_alternatives = Array.isArray(sustainability?.better_alternatives)
-      ? sustainability.better_alternatives
-      : null;
-    const sustainability_tags = Array.isArray(sustainability?.tags) ? sustainability.tags : null;
+    const sustainabilityFields = sustainabilityToRowFields(body?.sustainability);
 
     const userId = await getUserIdFromToken(token);
     if (!userId) {
@@ -95,11 +83,7 @@ export async function POST(request: NextRequest) {
         code,
         product_name: productName,
         brands,
-        sustainability_verdict,
-        sustainability_score,
-        sustainability_reasoning,
-        sustainability_better_alternatives,
-        sustainability_tags,
+        ...sustainabilityFields,
       })
       .select()
       .single();

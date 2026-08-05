@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseForUser, getSupabaseServiceRole } from "@/lib/supabase/server";
+import { getSupabaseForUser } from "@/lib/supabase/server";
 import { getAccessTokenFromRequest } from "@/lib/api-auth";
 import {
   mapListRowToList,
@@ -43,10 +43,7 @@ export async function GET(
       return NextResponse.json({ error: listError.message }, { status: 500 });
     }
 
-    // Load items with service role when available so RLS on shopping_list_items
-    // does not hide rows (ownership already verified by loading the list above).
-    const itemsClient = getSupabaseServiceRole() ?? supabase;
-    const { data: itemsData, error: itemsError } = await itemsClient
+    const { data: itemsData, error: itemsError } = await supabase
       .from("shopping_list_items")
       .select("*")
       .eq("list_id", id)

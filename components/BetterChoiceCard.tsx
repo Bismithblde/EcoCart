@@ -1,86 +1,31 @@
 'use client';
 
-import { TrendingUp, CheckCircle, ListPlus } from 'lucide-react';
+import { ListPlus } from 'lucide-react';
 
 interface BetterChoiceCardProps {
   currentProduct: string;
   currentScore: number;
   betterProduct: string;
-  /** Brand of the better product (e.g. from API). */
   betterBrand?: string;
-  /** Optional when alternatives are text-only suggestions. */
   betterScore?: number;
   improvement: string;
-  /** When provided, shows "Add to list" button. */
+  scoreDelta?: number;
+  confidence?: 'low' | 'medium' | 'high';
   onAddToList?: () => void;
 }
 
-export default function BetterChoiceCard({
-  currentProduct,
-  currentScore,
-  betterProduct,
-  betterBrand,
-  betterScore,
-  improvement,
-  onAddToList,
-}: BetterChoiceCardProps) {
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 dark:text-green-400';
-    if (score >= 60) return 'text-amber-600 dark:text-amber-400';
-    if (score >= 40) return 'text-orange-600 dark:text-orange-400';
-    return 'text-red-600 dark:text-red-400';
-  };
-
-  const getScoreBgColor = (score: number) => {
-    if (score >= 80) return 'bg-green-100 dark:bg-green-900/50';
-    if (score >= 60) return 'bg-amber-100 dark:bg-amber-900/50';
-    if (score >= 40) return 'bg-orange-100 dark:bg-orange-900/50';
-    return 'bg-red-100 dark:bg-red-900/50';
-  };
-
+export default function BetterChoiceCard({ currentProduct, currentScore, betterProduct, betterBrand, betterScore, improvement, scoreDelta, confidence, onAddToList }: BetterChoiceCardProps) {
   return (
-    <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4 hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Current Choice</p>
-          <p className="font-semibold text-gray-900 dark:text-white">{currentProduct}</p>
-          <div className={`inline-block mt-2 px-3 py-1 rounded-full font-bold ${getScoreColor(currentScore)} ${getScoreBgColor(currentScore)}`}>
-            Score: {currentScore}
-          </div>
-        </div>
-        <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+    <article className="grid grid-cols-1 border-2 border-[#111714] bg-[#fffdf5] text-[#111714] sm:grid-cols-12">
+      <div className="p-4 sm:col-span-4 sm:p-5">
+        <p className="font-mono text-[0.62rem] font-semibold">CURRENT / {currentScore}</p>
+        <p className="mt-3 font-semibold leading-tight">{currentProduct}</p>
       </div>
-
-      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 my-4 border border-green-100 dark:border-green-800">
-        <div className="flex items-center gap-2 mb-2">
-          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-          <p className="font-semibold text-green-900 dark:text-green-300">Better Choice</p>
-        </div>
-        <p className="font-semibold text-gray-900 dark:text-white text-lg mb-0.5">{betterProduct}</p>
-        {betterBrand ? (
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{betterBrand}</p>
-        ) : null}
-        {betterScore != null && (
-          <div className={`inline-block px-3 py-1 rounded-full font-bold ${getScoreColor(betterScore)} ${getScoreBgColor(betterScore)}`}>
-            Score: {betterScore}
-          </div>
-        )}
-        <p className="text-sm text-green-700 dark:text-green-300 mt-2 font-semibold flex items-center gap-1">
-          <span className="text-lg">↑</span> {improvement}
-        </p>
-        {onAddToList && (
-          <button
-            type="button"
-            onClick={onAddToList}
-            className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors"
-          >
-            <ListPlus className="w-4 h-4" />
-            Add to list
-          </button>
-        )}
+      <div className="flex items-center justify-center border-y-2 border-[#111714] bg-[#d59a12] px-3 py-2 font-mono text-lg font-semibold sm:col-span-1 sm:border-x-2 sm:border-y-0">→</div>
+      <div className="p-4 sm:col-span-7 sm:p-5">
+        <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[0.62rem] font-semibold text-[#0d563f]">BETTER / {betterScore ?? 'REVIEW'}{typeof scoreDelta === 'number' ? ` / +${scoreDelta} POINTS` : ''}</p><h4 className="mt-2 text-xl font-semibold tracking-[-0.035em]">{betterProduct}</h4>{betterBrand ? <p className="mt-1 text-sm text-[#4c514b]">{betterBrand}</p> : null}{confidence ? <p className="mt-2 font-mono text-[0.58rem] font-semibold uppercase text-[#4c514b]">{confidence} confidence</p> : null}</div>{onAddToList ? <button type="button" onClick={onAddToList} className="shrink-0 border-2 border-[#111714] bg-[#0d563f] p-2.5 text-white transition-colors hover:bg-[#2148d8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2148d8]" aria-label={`Add ${betterProduct} to a list`}><ListPlus className="h-4 w-4" /></button> : null}</div>
+        <p className="mt-4 border-t-2 border-[#0d563f] pt-3 text-sm leading-6">{improvement}</p>
       </div>
-
-      <p className="text-xs text-gray-600 dark:text-gray-400 text-center">Switch to a more sustainable alternative</p>
-    </div>
+    </article>
   );
 }

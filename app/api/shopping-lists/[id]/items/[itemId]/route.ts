@@ -3,6 +3,7 @@ import { getSupabaseForUser } from "@/lib/supabase/server";
 import { getAccessTokenFromRequest } from "@/lib/api-auth";
 import {
   mapListItemRowToItem,
+  sustainabilityToRowFields,
   type ShoppingListItemRowWithListId,
 } from "@/lib/shopping-list";
 
@@ -40,25 +41,7 @@ export async function PATCH(
 
     const sustainability = body?.sustainability;
     if (sustainability !== undefined) {
-      updates.sustainability_verdict =
-        sustainability?.verdict &&
-        ["good", "moderate", "poor"].includes(sustainability.verdict)
-          ? sustainability.verdict
-          : null;
-      updates.sustainability_score =
-        typeof sustainability?.score === "number" ? sustainability.score : null;
-      updates.sustainability_reasoning =
-        typeof sustainability?.reasoning === "string"
-          ? sustainability.reasoning
-          : null;
-      updates.sustainability_better_alternatives = Array.isArray(
-        sustainability?.better_alternatives
-      )
-        ? sustainability.better_alternatives
-        : null;
-      updates.sustainability_tags = Array.isArray(sustainability?.tags)
-        ? sustainability.tags
-        : null;
+      Object.assign(updates, sustainabilityToRowFields(sustainability));
     }
 
     const supabase = getSupabaseForUser(token);

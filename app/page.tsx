@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, List, X } from "lucide-react";
+import { X } from "lucide-react";
 import ProductInput from "@/components/ProductInput";
 import SustainabilityDashboard from "@/components/SustainabilityDashboard";
 import BetterChoiceCard from "@/components/BetterChoiceCard";
 import { AssessmentProgress } from "@/components/AssessmentProgress";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import LandingPage from "@/components/LandingPage";
+import AppHeader from "@/components/AppHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearch, type SearchResult } from "@/hooks/useSearch";
 import { useAnalyzeSustainability } from "@/hooks/useAnalyzeSustainability";
@@ -18,11 +20,11 @@ import { authFetch } from "@/lib/auth-client";
 
 export default function Home() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading: isAuthLoading } = useAuth();
   const { results, isLoading, error, search } = useSearch();
-  const { analysis, isLoading: isAnalyzing, error: analysisError, progressStep, progressSteps, analyze } =
+  const { analysis, isLoading: isAnalyzing, error: analysisError, progressStep, progressSteps, analyze, clearAnalysis } =
     useAnalyzeSustainability();
-  const { alternatives: betterAlternatives, isLoading: isLoadingAlternatives, error: alternativesError, fetchAlternatives } =
+  const { alternatives: betterAlternatives, isLoading: isLoadingAlternatives, error: alternativesError, fetchAlternatives, clearAlternatives } =
     useBetterAlternatives();
   const { lists, refetch: refetchLists } = useShoppingLists();
   const [selectedProduct, setSelectedProduct] = useState<SearchResult | null>(null);
@@ -32,6 +34,8 @@ export default function Home() {
   const [addToListError, setAddToListError] = useState<string | null>(null);
 
   const handleProductSubmit = (name: string) => {
+    clearAnalysis();
+    clearAlternatives();
     setSelectedProduct(null);
     setHasSearched(true);
     search(name);
@@ -39,6 +43,7 @@ export default function Home() {
 
   const handleAnalyzeSustainability = async () => {
     if (selectedProduct) {
+      clearAlternatives();
       await analyze({
         code: selectedProduct.code ?? "",
         product_name: selectedProduct.product_name,
@@ -52,8 +57,14 @@ export default function Home() {
     }
   };
 
+  const handleSelectProduct = (item: SearchResult) => {
+    clearAnalysis();
+    clearAlternatives();
+    setSelectedProduct(item);
+  };
+
   const handleFindBetterAlternatives = () => {
-    if (selectedProduct && analysis) {
+    if (selectedProduct && analysis && analysis.productCode === selectedProduct.code) {
       fetchAlternatives(
         {
           code: selectedProduct.code ?? "",
@@ -81,6 +92,10 @@ export default function Home() {
               reasoning: a.reasoning,
               better_alternatives: a.better_alternatives,
               tags: a.tags,
+              confidence: a.confidence,
+              sources: a.sources,
+              assessment_version: a.assessment_version,
+              assessed_at: a.assessed_at,
             }
           : undefined;
       const res = await authFetch(`/api/shopping-lists/${listId}/items`, {
@@ -110,95 +125,67 @@ export default function Home() {
     router.push("/login");
   };
 
+  if (isAuthLoading) {
+    return <div className="min-h-[100dvh] bg-[#dfeef2]" aria-label="Loading" />;
+  }
+
+  if (!user) {
+    return <LandingPage />;
+  }
+
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-        <header className="bg-white dark:bg-gray-950">
-          <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              <span className="font-medium">Dashboard</span>
-            </Link>
-            <div className="ml-auto flex items-center gap-3 min-w-0">
-              <Link
-                href="/shopping-lists"
-                className="flex-shrink-0 flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors font-medium"
-              >
-                <List className="w-5 h-5 flex-shrink-0" />
-                My Lists
-              </Link>
-              {user && (
-                <>
-                  {user.email && (
-                    <span className="text-sm text-gray-600 dark:text-gray-300 truncate min-w-0 max-w-[180px]" title={user.email}>
-                      {user.email}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="flex-shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  >
-                    Sign out
-                  </button>
-                </>
-              )}
-            </div>
-          </nav>
-        </header>
+      <div className="flex min-h-screen flex-col bg-[#dfeef2] font-sans text-[#111714] selection:bg-[#2148d8] selection:text-white">
+        <AppHeader active="dashboard" email={user.email} onSignOut={handleSignOut} />
 
-        <div className="flex flex-col items-center justify-center flex-1 px-4 pt-4 pb-12">
-          <main className="w-full max-w-2xl">
-            <div className="text-center mb-12">
-              <h1 className="text-6xl md:text-8xl font-bold text-gray-900 dark:text-white tracking-[0.2em] md:tracking-[0.25em]">
-                ECOCART
-              </h1>
+        <div className="flex-1 px-3 pb-12 pt-10 sm:px-5 sm:pb-20 sm:pt-16">
+          <main className="mx-auto w-full max-w-[1100px]">
+            <div className="mb-10 grid grid-cols-1 gap-6 sm:mb-14 sm:grid-cols-12 sm:items-end">
+              <div className="sm:col-span-8"><p className="font-mono text-[0.68rem] font-semibold">PRODUCT DESK / NEW ANALYSIS</p><h1 className="mt-4 max-w-[9ch] text-[clamp(3.7rem,8vw,7.5rem)] font-semibold leading-[0.85] tracking-[-0.075em]">What are you buying?</h1></div>
+              <p className="max-w-xs border-l-2 border-[#111714] pl-5 text-base leading-7 sm:col-span-4">Search a product, inspect the evidence, then save the better option.</p>
             </div>
 
-            <div className="rounded-2xl border-2 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-8 transition-all duration-300 ease-out hover:border-white dark:hover:border-white hover:-translate-y-0.5">
+            <div className="border-2 border-[#111714] bg-[#fffdf5] p-4 sm:p-7">
               <ProductInput onSubmit={handleProductSubmit} isLoading={isLoading} />
 
               {error && (
-                <div className="mt-6 p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-                  <p className="text-red-700 dark:text-red-300 font-medium">Search Error</p>
-                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{error}</p>
+                <div className="mt-6 border-2 border-[#111714] bg-[#fff4de] p-4">
+                  <p className="font-mono text-[0.68rem] font-semibold">SEARCH ERROR</p>
+                  <p className="mt-1 text-sm">{error}</p>
                 </div>
               )}
 
               {hasSearched && (
                 <div className="mt-8">
                   {isLoading ? (
-                    <p className="text-gray-600 dark:text-gray-400">Searching…</p>
+                    <p className="font-mono text-xs font-semibold text-[#0d563f]">SEARCHING...</p>
                   ) : (
                     <>
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                        Search Results ({results.length})
+                      <h2 className="mb-4 border-b-2 border-[#111714] pb-3 font-mono text-xs font-semibold">
+                        SEARCH RESULTS / {results.length}
                       </h2>
                       {results.length === 0 ? (
-                        <p className="text-gray-600 dark:text-gray-400">No products found. Try a different search.</p>
+                        <p className="text-[#4c514b]">No products found. Try a different search.</p>
                       ) : (
-                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                        <div className="max-h-72 space-y-2 overflow-y-auto">
                           {results.map((item, index) => (
                             <button
                               key={item.code ?? index}
-                              onClick={() => setSelectedProduct(item)}
-                              className={`w-full text-left p-3 rounded-xl border transition-colors ${
+                              onClick={() => handleSelectProduct(item)}
+                              className={`w-full border-2 border-[#111714] p-4 text-left transition-colors ${
                                 selectedProduct?.product_name === item.product_name
-                                  ? "bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                                  : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                                  ? "bg-[#2148d8] text-white"
+                                  : "bg-white hover:bg-[#dfeef2]"
                               }`}
                             >
-                              <p className="font-medium text-gray-900 dark:text-white">
+                              <p className="font-semibold">
                                 {item.product_name}
                               </p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                              <p className="mt-1 text-sm opacity-75">
                                 {item.brands || "No brand"}
                               </p>
                               {item.description && (
-                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 line-clamp-2">
+                                <p className="mt-1 line-clamp-2 text-xs opacity-65">
                                   {item.description}
                                 </p>
                               )}
@@ -213,23 +200,23 @@ export default function Home() {
 
               {selectedProduct && (
                 <div className="mt-8 space-y-4">
-                  <div className="p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  <div className="border-2 border-[#111714] bg-[#dfeef2] p-5 sm:p-6">
+                    <p className="mb-2 font-mono text-[0.62rem] font-semibold">SELECTED PRODUCT</p><h3 className="mb-2 text-2xl font-semibold tracking-[-0.04em]">
                       {selectedProduct.product_name}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="font-mono text-[0.65rem] text-[#4c514b]">
                       Brand: {selectedProduct.brands || "Unknown"} | Barcode:{" "}
                       {selectedProduct.code || "N/A"}
                     </p>
                     {selectedProduct.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                      <p className="mt-3 text-sm leading-6 text-[#4c514b]">
                         {selectedProduct.description}
                       </p>
                     )}
                     <button
                       onClick={handleAnalyzeSustainability}
                       disabled={isAnalyzing}
-                      className="mt-4 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center gap-2"
+                      className="mt-5 flex items-center gap-2 bg-[#0d563f] px-5 py-3 font-semibold text-white transition-colors hover:bg-[#2148d8] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isAnalyzing && (
                         <svg
@@ -264,13 +251,13 @@ export default function Home() {
                   )}
 
                   {analysisError && (
-                    <div className="p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-                      <p className="text-red-700 dark:text-red-300 font-medium">Analysis Error</p>
-                      <p className="text-red-600 dark:text-red-400 text-sm mt-1">{analysisError}</p>
+                    <div className="border-2 border-[#111714] bg-[#fff4de] p-4">
+                      <p className="font-mono text-[0.68rem] font-semibold">ANALYSIS ERROR</p>
+                      <p className="mt-1 text-sm">{analysisError}</p>
                     </div>
                   )}
 
-                  {analysis && (
+                  {analysis && analysis.productCode === selectedProduct.code && (
                     <div className="space-y-6">
                       <SustainabilityDashboard
                         productName={analysis.productName}
@@ -278,19 +265,22 @@ export default function Home() {
                         verdict={analysis.verdict}
                         reasoning={analysis.reasoning}
                         tags={analysis.tags}
+                        confidence={analysis.confidence}
+                        sources={analysis.sources}
+                        assessedAt={analysis.assessedAt}
                         metrics={analysis.metrics}
                       />
 
-                      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-6">
+                      <div className="border-2 border-[#111714] bg-[#fffdf5] p-5 sm:p-6">
                         <div className="flex flex-wrap items-center gap-3 mb-4">
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                          <h3 className="text-2xl font-semibold tracking-[-0.04em]">
                             Better Alternatives
                           </h3>
                           <button
                             type="button"
                             onClick={handleFindBetterAlternatives}
                             disabled={isLoadingAlternatives}
-                            className="px-3 py-1.5 rounded-lg bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center gap-2"
+                            className="flex items-center gap-2 border-2 border-[#111714] bg-[#2148d8] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d563f] disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isLoadingAlternatives ? (
                               <>
@@ -306,7 +296,7 @@ export default function Home() {
                           </button>
                         </div>
                         {alternativesError && (
-                          <p className="text-sm text-red-600 dark:text-red-400 mb-3">{alternativesError}</p>
+                          <p className="mb-3 border-2 border-[#111714] bg-[#fff4de] p-3 text-sm">{alternativesError}</p>
                         )}
                         {betterAlternatives.length > 0 ? (
                           <div className="space-y-3">
@@ -315,7 +305,7 @@ export default function Home() {
                                 return (
                                   <div
                                     key={alt.product.code}
-                                    className="p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-200"
+                                    className="border-2 border-[#111714] bg-[#fff4de] p-3 text-sm"
                                   >
                                     <span className="font-medium">{alt.product.product_name}</span>
                                     <span className="ml-2">{alt.assessment.error}</span>
@@ -332,6 +322,8 @@ export default function Home() {
                                   betterBrand={alt.product.brands}
                                   betterScore={a.score}
                                   improvement={a.reasoning}
+                                  scoreDelta={alt.comparison?.scoreDelta}
+                                  confidence={alt.comparison?.confidence}
                                   onAddToList={() => {
                                   setAddToListError(null);
                                   setProductToAdd(alt);
@@ -342,7 +334,7 @@ export default function Home() {
                           </div>
                         ) : analysis.alternatives && analysis.alternatives.length > 0 ? (
                           <div className="space-y-3">
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">AI suggestions:</p>
+                            <p className="mb-2 font-mono text-[0.65rem] font-semibold">AI SUGGESTIONS</p>
                             {analysis.alternatives.map((alt, index) => (
                               <BetterChoiceCard
                                 key={index}
@@ -355,7 +347,7 @@ export default function Home() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                          <p className="text-sm text-[#4c514b]">
                             Click &quot;Find similar & more sustainable&quot; to get alternatives from similar products ranked by sustainability.
                           </p>
                         )}
@@ -369,37 +361,37 @@ export default function Home() {
         </div>
 
         {productToAdd && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setProductToAdd(null)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111714]/70 p-4" onClick={() => setProductToAdd(null)}>
             <div
-              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl max-w-sm w-full p-5"
+              className="w-full max-w-sm border-2 border-[#111714] bg-[#fffdf5] p-5 text-[#111714]"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add to list</h3>
+                <h3 className="text-2xl font-semibold tracking-[-0.04em]">Add to list</h3>
                 <button
                   type="button"
                   onClick={() => setProductToAdd(null)}
-                  className="p-1 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="border-2 border-[#111714] p-1 transition-colors hover:bg-[#2148d8] hover:text-white"
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1 font-medium">
+              <p className="mb-1 text-sm font-semibold">
                 {productToAdd.product.product_name}
               </p>
               {productToAdd.product.brands && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{productToAdd.product.brands}</p>
+                <p className="mb-4 text-xs text-[#4c514b]">{productToAdd.product.brands}</p>
               )}
               {addToListError && (
-                <p className="text-sm text-red-600 dark:text-red-400 mb-3">{addToListError}</p>
+                <p className="mb-3 border-2 border-[#111714] bg-[#fff4de] p-3 text-sm">{addToListError}</p>
               )}
               {lists.length === 0 ? (
                 <>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No lists yet. Create one from My Lists.</p>
+                  <p className="mb-3 text-sm text-[#4c514b]">No lists yet. Create one from My Lists.</p>
                   <Link
                     href="/shopping-lists"
-                    className="inline-block px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium"
+                    className="inline-block bg-[#0d563f] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2148d8]"
                     onClick={() => setProductToAdd(null)}
                   >
                     Go to My Lists
@@ -413,7 +405,7 @@ export default function Home() {
                         type="button"
                         onClick={() => handleAddToChosenList(list.id)}
                         disabled={addingToListId !== null}
-                        className="w-full text-left px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium disabled:opacity-50"
+                        className="w-full border-2 border-[#111714] bg-white px-4 py-3 text-left text-sm font-semibold transition-colors hover:bg-[#dfeef2] disabled:opacity-50"
                       >
                         {addingToListId === list.id ? "Adding…" : list.name}
                       </button>

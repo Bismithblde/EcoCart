@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { ShoppingBag, List, Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
 import { useShoppingLists } from "@/hooks/useShoppingLists";
 import { isAuthenticated } from "@/lib/auth-client";
 import type { ShoppingList } from "@/lib/shopping-list";
@@ -62,44 +63,19 @@ export default function ShoppingListsPage() {
 
   if (!isAuthenticated()) {
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-        <header className="bg-white dark:bg-gray-950">
-          <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              <span className="font-medium">Dashboard</span>
-            </Link>
-            <div className="ml-auto flex items-center gap-3">
-              <Link
-                href="/shopping-lists"
-                className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors font-medium"
-              >
-                <List className="w-5 h-5" />
-                My Lists
-              </Link>
-              <Link
-                href="/login"
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-              >
-                Sign in
-              </Link>
-            </div>
-          </nav>
-        </header>
-        <div className="flex-1 flex items-center justify-center px-4">
-          <div className="text-center max-w-md">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+      <div className="flex min-h-screen flex-col bg-[#dfeef2] font-sans text-[#111714]">
+        <AppHeader active="lists" />
+        <div className="flex flex-1 items-center justify-center px-4 py-12">
+          <div className="max-w-xl border-2 border-[#111714] bg-[#fffdf5] p-7 sm:p-10">
+            <p className="font-mono text-[0.68rem] font-semibold text-[#0d563f]">LIST ARCHIVE / LOCKED</p><h1 className="mb-3 mt-4 text-5xl font-semibold leading-none tracking-[-0.06em]">
               Shopping Lists
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="mb-7 max-w-sm leading-7 text-[#4c514b]">
               Sign in to view and manage your saved lists.
             </p>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium rounded-lg hover:opacity-90"
+              className="inline-flex items-center gap-2 bg-[#0d563f] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#2148d8]"
             >
               Sign in
             </Link>
@@ -110,40 +86,22 @@ export default function ShoppingListsPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950 font-sans">
-      <header className="bg-white dark:bg-gray-950">
-        <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center h-14">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <ShoppingBag className="w-5 h-5" />
-            <span className="font-medium">Dashboard</span>
-          </Link>
-          <Link
-            href="/shopping-lists"
-            aria-current="page"
-            className="ml-auto flex items-center gap-2 text-gray-900 dark:text-white font-medium"
-          >
-            <List className="w-5 h-5" />
-            My Lists
-          </Link>
-        </nav>
-      </header>
+    <div className="flex min-h-screen flex-col bg-[#dfeef2] font-sans text-[#111714]">
+      <AppHeader active="lists" />
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
-        <div className="flex items-end justify-between gap-4 mb-8">
+      <main className="mx-auto w-full max-w-[1100px] flex-1 px-3 py-10 sm:px-5 sm:py-16">
+        <div className="mb-10 flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <p className="font-mono text-[0.68rem] font-semibold">SAVED / PRODUCT SETS</p><h1 className="mt-3 text-[clamp(3.6rem,8vw,7rem)] font-semibold leading-[0.85] tracking-[-0.07em]">
               Shopping Lists
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {isLoading ? "…" : `${listCount} list${listCount === 1 ? "" : "s"}`}
+            <p className="mt-4 font-mono text-xs font-semibold text-[#0d563f]">
+              {isLoading ? "..." : `${listCount} LIST${listCount === 1 ? "" : "S"}`}
             </p>
           </div>
           <Link
             href="/shopping-list"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0"
+            className="inline-flex shrink-0 items-center gap-2 border-2 border-[#111714] bg-[#0d563f] px-5 py-3 font-semibold text-white transition-colors hover:bg-[#2148d8]"
           >
             <Plus className="w-4 h-4" />
             New list
@@ -151,25 +109,23 @@ export default function ShoppingListsPage() {
         </div>
 
         {(error || actionError) && (
-          <div className="mb-6 p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-            <p className="text-red-700 dark:text-red-300 text-sm">{actionError ?? error}</p>
+          <div className="mb-6 border-2 border-[#111714] bg-[#fff4de] p-4">
+            <p className="text-sm">{actionError ?? error}</p>
           </div>
         )}
 
         {isEmpty && (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-12 flex flex-col items-center justify-center min-h-[320px] text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-4">
-              <ShoppingBag className="w-8 h-8 text-gray-500 dark:text-gray-400" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="flex min-h-[340px] flex-col items-start justify-between border-2 border-[#111714] bg-[#fffdf5] p-7 sm:p-10">
+            <p className="font-mono text-[0.68rem] font-semibold text-[#0d563f]">EMPTY RECEIPT / 000</p>
+            <h2 className="mb-2 max-w-[10ch] text-5xl font-semibold leading-[0.9] tracking-[-0.06em]">
               No lists yet
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm">
+            <p className="mb-6 max-w-sm text-[#4c514b]">
               Create your first shopping list to get started
             </p>
             <Link
               href="/shopping-list"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center gap-2 bg-[#0d563f] px-5 py-3 font-semibold text-white transition-colors hover:bg-[#2148d8]"
             >
               <Plus className="w-4 h-4" />
               Create List
@@ -178,11 +134,11 @@ export default function ShoppingListsPage() {
         )}
 
         {!isLoading && listCount > 0 && (
-          <ul className="space-y-3">
+          <ul className="grid gap-0 border-2 border-[#111714] bg-[#111714]">
             {lists.map((list) => (
               <li
                 key={list.id}
-                className="flex items-center gap-2 p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+                className="flex min-h-24 items-center gap-2 bg-[#fffdf5] p-4 transition-colors hover:bg-[#dfeef2] sm:p-6"
               >
                 {editingId === list.id ? (
                   <div className="flex-1 flex items-center gap-2 flex-wrap">
@@ -194,34 +150,34 @@ export default function ShoppingListsPage() {
                         if (e.key === "Enter") saveEdit(list.id);
                         if (e.key === "Escape") cancelEdit();
                       }}
-                      className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      className="min-w-[120px] flex-1 border-2 border-[#111714] bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-[#2148d8]"
                       autoFocus
                       aria-label="List name"
                     />
                     <button
                       type="button"
                       onClick={() => saveEdit(list.id)}
-                      className="px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium hover:opacity-90"
+                      className="bg-[#0d563f] px-3 py-2 text-sm font-semibold text-white hover:bg-[#2148d8]"
                     >
                       Save
                     </button>
                     <button
                       type="button"
                       onClick={cancelEdit}
-                      className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="border-2 border-[#111714] bg-[#fffdf5] px-3 py-2 text-sm font-semibold hover:bg-[#dfeef2]"
                     >
                       Cancel
                     </button>
                   </div>
                 ) : deletingId === list.id ? (
                   <div className="flex-1 flex items-center gap-2 flex-wrap">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-[#4c514b]">
                       Delete &quot;{list.name}&quot;? This cannot be undone.
                     </span>
                     <button
                       type="button"
                       onClick={() => handleDelete(list.id)}
-                      className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+                      className="bg-[#111714] px-3 py-2 text-sm font-semibold text-white hover:bg-[#2148d8]"
                     >
                       Yes, delete
                     </button>
@@ -231,7 +187,7 @@ export default function ShoppingListsPage() {
                         setDeletingId(null);
                         setActionError(null);
                       }}
-                      className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium"
+                      className="border-2 border-[#111714] bg-[#fffdf5] px-3 py-2 text-sm font-semibold hover:bg-[#dfeef2]"
                     >
                       Cancel
                     </button>
@@ -242,10 +198,10 @@ export default function ShoppingListsPage() {
                       href={`/shopping-lists/${list.id}`}
                       className="flex-1 min-w-0"
                     >
-                      <span className="font-semibold text-gray-900 dark:text-white">
+                      <span className="text-xl font-semibold tracking-[-0.035em]">
                         {list.name}
                       </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                      <span className="ml-2 font-mono text-[0.65rem] text-[#4c514b]">
                         {list.itemCount !== undefined
                           ? `${list.itemCount} item${list.itemCount === 1 ? "" : "s"}`
                           : "View"}
@@ -258,7 +214,7 @@ export default function ShoppingListsPage() {
                           e.preventDefault();
                           startEdit(list);
                         }}
-                        className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200"
+                        className="border-2 border-[#111714] bg-[#fffdf5] p-2 hover:bg-[#2148d8] hover:text-white"
                         aria-label="Rename list"
                       >
                         <Pencil className="w-4 h-4" />
@@ -270,7 +226,7 @@ export default function ShoppingListsPage() {
                           setDeletingId(list.id);
                           setActionError(null);
                         }}
-                        className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                        className="border-y-2 border-r-2 border-[#111714] bg-[#fffdf5] p-2 hover:bg-[#111714] hover:text-white"
                         aria-label="Delete list"
                       >
                         <Trash2 className="w-4 h-4" />

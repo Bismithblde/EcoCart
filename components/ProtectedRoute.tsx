@@ -21,10 +21,10 @@ export default function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-green-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center gap-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#dfeef2] text-[#111714]">
+        <div className="flex flex-col items-center gap-4 border-2 border-[#111714] bg-[#fffdf5] p-8">
           <svg
-            className="h-8 w-8 animate-spin text-blue-600"
+            className="h-8 w-8 animate-spin text-[#0d563f]"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -43,9 +43,7 @@ export default function ProtectedRoute({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Loading…
-          </p>
+          <p className="font-mono text-xs font-semibold">LOADING / ECOCART</p>
         </div>
       </div>
     );

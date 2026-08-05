@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseForUser } from "@/lib/supabase/server";
-import { mapRowToItem, type ShoppingListItemRow } from "@/lib/shopping-list";
+import { mapRowToItem, sustainabilityToRowFields, type ShoppingListItemRow } from "@/lib/shopping-list";
 
 function getAccessToken(request: NextRequest): string | null {
   const auth = request.headers.get("authorization");
@@ -81,20 +81,7 @@ export async function PATCH(
 
     const sustainability = body?.sustainability;
     if (sustainability !== undefined) {
-      updates.sustainability_verdict =
-        sustainability?.verdict && ["good", "moderate", "poor"].includes(sustainability.verdict)
-          ? sustainability.verdict
-          : null;
-      updates.sustainability_score =
-        typeof sustainability?.score === "number" ? sustainability.score : null;
-      updates.sustainability_reasoning =
-        typeof sustainability?.reasoning === "string" ? sustainability.reasoning : null;
-      updates.sustainability_better_alternatives = Array.isArray(sustainability?.better_alternatives)
-        ? sustainability.better_alternatives
-        : null;
-      updates.sustainability_tags = Array.isArray(sustainability?.tags)
-        ? sustainability.tags
-        : null;
+      Object.assign(updates, sustainabilityToRowFields(sustainability));
     }
 
     const supabase = getSupabaseForUser(token);

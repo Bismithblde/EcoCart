@@ -12,10 +12,10 @@ interface SustainabilityItemScoreProps {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 80) return "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30";
-  if (score >= 60) return "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30";
-  if (score >= 40) return "text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30";
-  return "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30";
+  if (score >= 80) return "bg-[#0d563f] text-white";
+  if (score >= 60) return "bg-[#d59a12] text-[#111714]";
+  if (score >= 40) return "bg-[#fff4de] text-[#111714]";
+  return "bg-[#111714] text-white";
 }
 
 export function SustainabilityItemScore({
@@ -24,28 +24,14 @@ export function SustainabilityItemScore({
   error = null,
 }: SustainabilityItemScoreProps) {
   const [expanded, setExpanded] = useState(false);
-  const [stepIndex, setStepIndex] = useState(0);
-
-  useEffect(() => {
-    if (!loading) {
-      setStepIndex(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      setStepIndex((i) => (i + 1) % ASSESSMENT_PROGRESS_STEPS.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [loading]);
-
-  const progressStep = ASSESSMENT_PROGRESS_STEPS[stepIndex] ?? ASSESSMENT_PROGRESS_STEPS[0];
 
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-2">
+    <div className="mt-3 flex flex-wrap items-center gap-2 text-[#111714]">
       {loading && (
-        <AssessmentProgress step={progressStep} variant="compact" />
+        <LoadingAssessment />
       )}
       {error && !loading && (
-        <span className="text-xs text-red-600 dark:text-red-400" title={error}>
+        <span className="border-b-2 border-[#111714] font-mono text-[0.62rem] font-semibold" title={error}>
           Score unavailable
           {error.trim() && (() => {
             const firstLine = error.split(/\r?\n/)[0].trim();
@@ -53,7 +39,7 @@ export function SustainabilityItemScore({
             return (
               <span className="ml-1 opacity-90">
                 ({excerpt}
-                {firstLine.length > 60 ? "…" : ""})
+                {firstLine.length > 60 ? "..." : ""})
               </span>
             );
           })()}
@@ -62,7 +48,7 @@ export function SustainabilityItemScore({
       {sustainability && !loading && (
         <>
           <span
-            className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${scoreColor(sustainability.score)}`}
+            className={`inline-flex items-center border-2 border-[#111714] px-2 py-1 font-mono text-[0.65rem] font-semibold ${scoreColor(sustainability.score)}`}
           >
             {sustainability.score}/100
           </span>
@@ -71,7 +57,7 @@ export function SustainabilityItemScore({
               {(sustainability.tags.slice(0, 3)).map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex rounded bg-gray-200 dark:bg-gray-600 px-1.5 py-0.5 text-xs text-gray-700 dark:text-gray-200"
+                  className="inline-flex border border-[#111714] bg-[#dfeef2] px-1.5 py-0.5 font-mono text-[0.58rem] font-semibold uppercase"
                 >
                   {tag.replace(/-/g, " ")}
                 </span>
@@ -81,7 +67,7 @@ export function SustainabilityItemScore({
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}
-            className="inline-flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            className="inline-flex items-center border-2 border-[#111714] bg-[#fffdf5] p-1 hover:bg-[#2148d8] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2148d8]"
             aria-expanded={expanded}
             aria-label={expanded ? "Hide details" : "Show details"}
           >
@@ -97,19 +83,40 @@ export function SustainabilityItemScore({
         </>
       )}
       {expanded && sustainability && (
-        <div className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 p-3 text-sm mt-1">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+        <div className="mt-1 w-full border-2 border-[#111714] bg-[#fffdf5] p-4 text-sm">
+          <p className="mb-2 font-mono text-[0.62rem] font-semibold uppercase">
             Verdict: {sustainability.verdict}
           </p>
           {sustainability.reasoning && (
-            <p className="text-gray-700 dark:text-gray-300 mb-2">{sustainability.reasoning}</p>
+            <p className="mb-3 leading-6 text-[#4c514b]">{sustainability.reasoning}</p>
+          )}
+          {(sustainability.confidence || sustainability.assessed_at) && (
+            <p className="mb-3 font-mono text-[0.62rem] font-semibold uppercase">
+              {sustainability.confidence ? `${sustainability.confidence} confidence` : ""}
+              {sustainability.confidence && sustainability.assessed_at ? " / " : ""}
+              {sustainability.assessed_at ? new Date(sustainability.assessed_at).toLocaleDateString() : ""}
+            </p>
+          )}
+          {sustainability.sources && sustainability.sources.length > 0 && (
+            <div className="mb-3 border-t-2 border-[#111714] pt-3">
+              <p className="mb-2 font-mono text-[0.62rem] font-semibold uppercase">Evidence</p>
+              <ol className="list-inside list-decimal space-y-1 text-[#4c514b]">
+                {sustainability.sources.map((source) => (
+                  <li key={source.id}>
+                    <a href={source.url} target="_blank" rel="noreferrer" className="font-medium text-[#111714] underline decoration-2 underline-offset-2 hover:text-[#2148d8]">
+                      {source.title}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </div>
           )}
           {sustainability.better_alternatives.length > 0 && (
             <>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+              <p className="mb-1 border-t-2 border-[#111714] pt-3 font-mono text-[0.62rem] font-semibold uppercase">
                 Better alternatives
               </p>
-              <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-0.5">
+              <ul className="list-inside list-square space-y-1 text-[#4c514b]">
                 {sustainability.better_alternatives.map((alt, i) => (
                   <li key={i}>{alt}</li>
                 ))}
@@ -120,4 +127,18 @@ export function SustainabilityItemScore({
       )}
     </div>
   );
+}
+
+function LoadingAssessment() {
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStepIndex((i) => (i + 1) % ASSESSMENT_PROGRESS_STEPS.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const progressStep = ASSESSMENT_PROGRESS_STEPS[stepIndex] ?? ASSESSMENT_PROGRESS_STEPS[0];
+  return <AssessmentProgress step={progressStep} variant="compact" />;
 }

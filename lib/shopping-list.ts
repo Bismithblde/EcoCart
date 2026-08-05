@@ -4,6 +4,15 @@
  */
 
 export type SustainabilityVerdict = "good" | "moderate" | "poor";
+export type SustainabilityConfidence = "low" | "medium" | "high";
+
+export interface ShoppingListAssessmentSource {
+  id: string;
+  title: string;
+  url: string;
+  snippet?: string;
+  kind: "product" | "web";
+}
 
 export interface ShoppingListSustainability {
   verdict: SustainabilityVerdict;
@@ -11,6 +20,10 @@ export interface ShoppingListSustainability {
   reasoning: string;
   better_alternatives: string[];
   tags?: string[];
+  confidence?: SustainabilityConfidence;
+  sources?: ShoppingListAssessmentSource[];
+  assessment_version?: string;
+  assessed_at?: string;
 }
 
 /** Row from shopping_list (legacy single list per user). */
@@ -24,6 +37,11 @@ export interface ShoppingListItemRow {
   sustainability_score: number | null;
   sustainability_reasoning: string | null;
   sustainability_better_alternatives: string[] | null;
+  sustainability_tags?: string[] | null;
+  sustainability_confidence?: SustainabilityConfidence | null;
+  sustainability_sources?: ShoppingListAssessmentSource[] | null;
+  sustainability_assessment_version?: string | null;
+  sustainability_assessed_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +57,11 @@ export interface ShoppingListItemRowWithListId {
   sustainability_score: number | null;
   sustainability_reasoning: string | null;
   sustainability_better_alternatives: string[] | null;
+  sustainability_tags?: string[] | null;
+  sustainability_confidence?: SustainabilityConfidence | null;
+  sustainability_sources?: ShoppingListAssessmentSource[] | null;
+  sustainability_assessment_version?: string | null;
+  sustainability_assessed_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -77,9 +100,16 @@ function sustainabilityFromRow(row: {
   sustainability_score: number | null;
   sustainability_reasoning: string | null;
   sustainability_better_alternatives: string[] | null;
+  sustainability_tags?: string[] | null;
+  sustainability_confidence?: SustainabilityConfidence | null;
+  sustainability_sources?: ShoppingListAssessmentSource[] | null;
+  sustainability_assessment_version?: string | null;
+  sustainability_assessed_at?: string | null;
 }): ShoppingListSustainability | null {
-  const rowWithTags = row as typeof row & { sustainability_tags?: string[] | null };
-  const tags = Array.isArray(rowWithTags.sustainability_tags) ? rowWithTags.sustainability_tags : undefined;
+  const tags = Array.isArray(row.sustainability_tags) ? row.sustainability_tags : undefined;
+  const sources = Array.isArray(row.sustainability_sources)
+    ? row.sustainability_sources
+    : undefined;
   return row.sustainability_verdict != null && row.sustainability_score != null
     ? {
         verdict: row.sustainability_verdict,
@@ -87,8 +117,76 @@ function sustainabilityFromRow(row: {
         reasoning: row.sustainability_reasoning ?? "",
         better_alternatives: row.sustainability_better_alternatives ?? [],
         ...(tags?.length ? { tags } : {}),
+        ...(row.sustainability_confidence
+          ? { confidence: row.sustainability_confidence }
+          : {}),
+        ...(sources?.length ? { sources } : {}),
+        ...(row.sustainability_assessment_version
+          ? { assessment_version: row.sustainability_assessment_version }
+          : {}),
+        ...(row.sustainability_assessed_at
+          ? { assessed_at: row.sustainability_assessed_at }
+          : {}),
       }
     : null;
+}
+
+function sanitizeAssessmentSources(value: unknown): ShoppingListAssessmentSource[] | null {
+  if (!Array.isArray(value)) return null;
+  const sources = value
+    .filter((source): source is Record<string, unknown> => Boolean(source) && typeof source === "object")
+    .map((source) => ({
+      id: typeof source.id === "string" ? source.id.slice(0, 80) : "",
+      title: typeof source.title === "string" ? source.title.slice(0, 240) : "",
+      url: typeof source.url === "string" ? source.url.slice(0, 1000) : "",
+      snippet: typeof source.snippet === "string" ? source.snippet.slice(0, 500) : undefined,
+      kind: source.kind === "web" ? "web" as const : "product" as const,
+    }))
+    .filter((source) => source.id && source.title && /^https?:\/\//i.test(source.url))
+    .slice(0, 12);
+  return sources.length ? sources : null;
+}
+
+/** Convert a client assessment into the database column contract. */
+export function sustainabilityToRowFields(value: unknown): Record<string, unknown> {
+  const sustainability = value && typeof value === "object"
+    ? value as Record<string, unknown>
+    : null;
+  const verdict = sustainability?.verdict;
+  const score = sustainability?.score;
+  const confidence = sustainability?.confidence;
+
+  return {
+    sustainability_verdict:
+      verdict === "good" || verdict === "moderate" || verdict === "poor" ? verdict : null,
+    sustainability_score:
+      typeof score === "number" && Number.isFinite(score) && score >= 0 && score <= 100
+        ? Math.round(score)
+        : null,
+    sustainability_reasoning:
+      typeof sustainability?.reasoning === "string"
+        ? sustainability.reasoning.slice(0, 2000)
+        : null,
+    sustainability_better_alternatives: Array.isArray(sustainability?.better_alternatives)
+      ? sustainability.better_alternatives.filter((item): item is string => typeof item === "string").slice(0, 8)
+      : null,
+    sustainability_tags: Array.isArray(sustainability?.tags)
+      ? sustainability.tags.filter((item): item is string => typeof item === "string").slice(0, 5)
+      : null,
+    sustainability_confidence:
+      confidence === "low" || confidence === "medium" || confidence === "high"
+        ? confidence
+        : null,
+    sustainability_sources: sanitizeAssessmentSources(sustainability?.sources),
+    sustainability_assessment_version:
+      typeof sustainability?.assessment_version === "string"
+        ? sustainability.assessment_version.slice(0, 80)
+        : null,
+    sustainability_assessed_at:
+      typeof sustainability?.assessed_at === "string" && !Number.isNaN(Date.parse(sustainability.assessed_at))
+        ? new Date(sustainability.assessed_at).toISOString()
+        : null,
+  };
 }
 
 function rowToItem(row: ShoppingListItemRow): ShoppingListItem {

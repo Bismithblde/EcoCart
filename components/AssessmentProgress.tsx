@@ -18,7 +18,7 @@ export function AssessmentProgress({
 }: AssessmentProgressProps) {
   if (variant === "compact") {
     return (
-      <span className="inline-flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+      <span className="inline-flex items-center gap-2 font-mono text-[0.65rem] font-semibold text-[#0d563f]">
         <Loader2 className="h-3.5 w-3.5 animate-spin flex-shrink-0" aria-hidden />
         <span>{step}</span>
       </span>
@@ -27,34 +27,32 @@ export function AssessmentProgress({
 
   return (
     <div
-      className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-6"
+      className="border-2 border-[#111714] bg-[#fffdf5] p-5 text-[#111714]"
       role="status"
       aria-live="polite"
       aria-label={`Sustainability assessment in progress: ${step}`}
     >
       <div className="flex items-start gap-3">
         <Loader2
-          className="h-6 w-6 animate-spin text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5"
+          className="mt-0.5 h-6 w-6 flex-shrink-0 animate-spin text-[#0d563f]"
           aria-hidden
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-            Calculating sustainability score
+          <p className="mb-1 font-mono text-[0.68rem] font-semibold">
+            CALCULATING / IMPACT SCORE
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{step}</p>
+          <p className="mb-3 text-sm text-[#4c514b]">{step}</p>
           {steps.length > 0 && (
-            <ul className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <ul className="grid gap-px border-2 border-[#111714] bg-[#111714] font-mono text-[0.62rem] sm:grid-cols-2">
               {steps.map((s, i) => (
                 <li
                   key={i}
-                  className={`flex items-center gap-2 ${
-                    s === step ? "text-green-600 dark:text-green-400 font-medium" : ""
-                  }`}
+                  className={`flex items-center gap-2 bg-[#fffdf5] p-2 ${s === step ? "font-semibold text-[#0d563f]" : "text-[#727873]"}`}
                 >
                   {s === step ? (
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <span className="inline-block h-1.5 w-1.5 animate-pulse bg-[#0d563f]" />
                   ) : (
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+                    <span className="inline-block h-1.5 w-1.5 bg-[#b7c4c4]" />
                   )}
                   {s}
                 </li>

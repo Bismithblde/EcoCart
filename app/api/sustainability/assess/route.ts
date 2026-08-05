@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assessProduct, type ProductSummary } from "@/lib/sustainability-agent";
+import { authorizeAiRequest } from "@/lib/ai-request-guard";
 
-const MAX_PRODUCTS = 10;
+const MAX_PRODUCTS = 3;
 
 function checkOpenAIKey(): void {
   if (!process.env.OPENAI_API_KEY?.trim()) {
@@ -20,6 +21,9 @@ function checkOpenAIKey(): void {
  */
 export async function POST(request: NextRequest) {
   try {
+    const authorization = await authorizeAiRequest(request);
+    if ("response" in authorization) return authorization.response;
+
     checkOpenAIKey();
     const body = await request.json();
     const raw = body?.products;
@@ -31,7 +35,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const products: ProductSummary[] = raw.slice(0, MAX_PRODUCTS).map((p: unknown) => {
+    if (raw.length > MAX_PRODUCTS) {
+      return NextResponse.json(
+        { error: `A maximum of ${MAX_PRODUCTS} products can be assessed at once` },
+        { status: 400 }
+      );
+    }
+
+    const products: ProductSummary[] = raw.map((p: unknown) => {
       const o = p && typeof p === "object" ? (p as Record<string, unknown>) : {};
       return {
         code: String(o.code ?? ""),
@@ -46,12 +57,32 @@ export async function POST(request: NextRequest) {
             : typeof o.ingredients === "string"
               ? o.ingredients
               : undefined,
-        labels_tags: o.labels_tags,
-        additives_tags: o.additives_tags,
-        allergens_tags: o.allergens_tags,
-        ...o,
+        labels_tags:
+          typeof o.labels_tags === "string" || Array.isArray(o.labels_tags)
+            ? o.labels_tags as string | string[]
+            : undefined,
+        additives_tags:
+          typeof o.additives_tags === "string" || Array.isArray(o.additives_tags)
+            ? o.additives_tags as string | string[]
+            : undefined,
+        allergens_tags:
+          typeof o.allergens_tags === "string" || Array.isArray(o.allergens_tags)
+            ? o.allergens_tags as string | string[]
+            : undefined,
+        nutriments:
+          o.nutriments && typeof o.nutriments === "object"
+            ? o.nutriments as Record<string, unknown>
+            : undefined,
+        quantity: typeof o.quantity === "string" ? o.quantity : undefined,
       } as ProductSummary;
     });
+
+    if (products.some((product) => !product.code.trim())) {
+      return NextResponse.json(
+        { error: "Every product must include a code" },
+        { status: 400 }
+      );
+    }
 
     const results = await Promise.all(
       products.map(async (product) => {

@@ -21,7 +21,7 @@ export default function AuthPageShell({
           <Link href="/" className="w-fit font-mono text-[0.68rem] font-semibold hover:text-[#0d563f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111714]">BACK / HOME</Link>
           <Link href="/" aria-label="Ecocart home" className="col-start-2 flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#111714]">
             <EcoMark className="h-7 w-7 text-[#0d563f]" />
-            <span className="font-semibold tracking-[-0.04em]">ecocart</span>
+            <span className="font-semibold tracking-[-0.025em]">ECOCART</span>
           </Link>
         </nav>
       </header>

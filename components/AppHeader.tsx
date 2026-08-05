@@ -22,7 +22,7 @@ export default function AppHeader({
       <nav aria-label="App navigation" className="mx-auto flex max-w-[1400px] items-stretch border-2 border-[#111714] bg-[#fffdf5] text-[#111714]">
         <Link href="/" aria-label="Ecocart dashboard" className="flex min-w-0 flex-1 items-center gap-2 px-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#111714] sm:px-6">
           <EcoMark className="h-7 w-7 shrink-0 text-[#0d563f]" />
-          <span className="font-semibold tracking-[-0.04em]">ecocart</span>
+          <span className="font-semibold tracking-[-0.025em]">ECOCART</span>
         </Link>
         {email ? <span className="hidden max-w-48 items-center truncate border-l-2 border-[#111714] px-5 font-mono text-[0.65rem] font-semibold lg:flex" title={email}>{email}</span> : null}
         <Link href="/" aria-current={active === "dashboard" ? "page" : undefined} className={navClass(active === "dashboard")}>Analyze</Link>

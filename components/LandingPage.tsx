@@ -47,7 +47,7 @@ export default function LandingPage() {
           <a href="#system" className="hidden w-fit text-sm font-semibold transition-colors hover:text-[#0d563f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111714] sm:block">How it works</a>
           <Link href="/" aria-label="Ecocart home" className="col-start-2 flex items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-[#111714]">
             <EcoMark className="h-7 w-7 text-[#0d563f] sm:h-8 sm:w-8" />
-            <span className="text-lg font-semibold tracking-[-0.045em] sm:text-xl">ecocart</span>
+            <span className="text-lg font-semibold tracking-[-0.025em] sm:text-xl">ECOCART</span>
           </Link>
           <div className="col-start-3 flex justify-end">
             <Link href="/login" className="text-sm font-semibold transition-colors hover:text-[#0d563f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111714]">Sign in</Link>

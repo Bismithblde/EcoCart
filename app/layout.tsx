@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Ecocart | Know what you're buying",
   description: "Understand product impact, compare better alternatives, and build a more informed shopping list.",
-  icons: { icon: [] },
+  icons: { icon: "/icon.svg" },
 };
 
 export default function RootLayout({

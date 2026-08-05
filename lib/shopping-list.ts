@@ -3,7 +3,13 @@
  * Tables: shopping_list (legacy), shopping_lists, shopping_list_items (see BACKEND.md for SQL).
  */
 
-export type SustainabilityVerdict = "good" | "moderate" | "poor";
+import type {
+  AssessmentDimension,
+  AssessmentEvidenceSummary,
+  AssessmentStatus,
+} from "./sustainability-types";
+
+export type SustainabilityVerdict = "good" | "moderate" | "poor" | "insufficient_evidence";
 export type SustainabilityConfidence = "low" | "medium" | "high";
 
 export interface ShoppingListAssessmentSource {
@@ -12,11 +18,15 @@ export interface ShoppingListAssessmentSource {
   url: string;
   snippet?: string;
   kind: "product" | "web";
+  domain?: string;
+  query?: string;
+  position?: number;
+  published_at?: string;
 }
 
 export interface ShoppingListSustainability {
   verdict: SustainabilityVerdict;
-  score: number;
+  score: number | null;
   reasoning: string;
   better_alternatives: string[];
   tags?: string[];
@@ -24,6 +34,9 @@ export interface ShoppingListSustainability {
   sources?: ShoppingListAssessmentSource[];
   assessment_version?: string;
   assessed_at?: string;
+  status?: AssessmentStatus;
+  dimensions?: AssessmentDimension[];
+  evidence?: AssessmentEvidenceSummary;
 }
 
 /** Row from shopping_list (legacy single list per user). */
@@ -141,6 +154,14 @@ function sanitizeAssessmentSources(value: unknown): ShoppingListAssessmentSource
       url: typeof source.url === "string" ? source.url.slice(0, 1000) : "",
       snippet: typeof source.snippet === "string" ? source.snippet.slice(0, 500) : undefined,
       kind: source.kind === "web" ? "web" as const : "product" as const,
+      domain: typeof source.domain === "string" ? source.domain.slice(0, 240) : undefined,
+      query: typeof source.query === "string" ? source.query.slice(0, 500) : undefined,
+      position:
+        typeof source.position === "number" && Number.isFinite(source.position)
+          ? Math.max(1, Math.round(source.position))
+          : undefined,
+      published_at:
+        typeof source.published_at === "string" ? source.published_at.slice(0, 120) : undefined,
     }))
     .filter((source) => source.id && source.title && /^https?:\/\//i.test(source.url))
     .slice(0, 12);

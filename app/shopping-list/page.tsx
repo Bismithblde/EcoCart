@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShoppingBag, ArrowLeft, Search, Plus } from "lucide-react";
@@ -13,10 +13,17 @@ import type { ShoppingListSustainability } from "@/lib/shopping-list";
 import { authFetch } from "@/lib/auth-client";
 import { isAuthenticated } from "@/lib/auth-client";
 import type { SearchResult } from "@/hooks/useSearch";
+import {
+  INITIAL_ASSESSMENT_PROGRESS,
+  type AssessmentProgressState,
+} from "@/hooks/useAnalyzeSustainability";
+import { readNdjsonStream, responseError } from "@/lib/ndjson";
+import type { AssessmentStreamEvent } from "@/lib/sustainability-types";
 
 export interface DraftListItem extends AddItemBody {
   sustainabilityLoading?: boolean;
   sustainabilityError?: string;
+  sustainabilityProgress?: AssessmentProgressState;
 }
 
 export default function ShoppingListCreatorPage() {
@@ -28,6 +35,7 @@ export default function ShoppingListCreatorPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showNameModal, setShowNameModal] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const assessmentControllersRef = useRef(new Map<string, AbortController>());
 
   const handleSearchSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -65,7 +73,11 @@ export default function ShoppingListCreatorPage() {
         console.log("[AddList] addToDraft: skipped (already in draft)", { code: body.code });
         return prev;
       }
-      const newItem: DraftListItem = { ...body, sustainabilityLoading: true };
+      const newItem: DraftListItem = {
+        ...body,
+        sustainabilityLoading: true,
+        sustainabilityProgress: INITIAL_ASSESSMENT_PROGRESS,
+      };
       console.log("[AddList] addToDraft: added to draft", {
         newItem,
         draftCountBefore: prev.length,
@@ -82,31 +94,52 @@ export default function ShoppingListCreatorPage() {
       ingredients: result.ingredients,
       ingredients_text: result.ingredients,
       ecoscore_grade: result.ecoscore_grade,
+      ecoscore_score: result.ecoscore_score,
       nutriscore_grade: result.nutriscore_grade,
     };
+
+    const controller = new AbortController();
+    assessmentControllersRef.current.get(result.code)?.abort();
+    assessmentControllersRef.current.set(result.code, controller);
 
     authFetch("/api/sustainability/assess", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ products: [productPayload] }),
+      signal: controller.signal,
     })
       .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const message =
-            typeof data?.error === "string" ? data.error : "Assessment failed";
-          setDraftItems((prev) =>
-            prev.map((item) =>
-              item.code !== result.code
-                ? item
-                : { ...item, sustainabilityLoading: false, sustainabilityError: message }
-            )
-          );
-          return;
+        if (!res.ok) throw await responseError(res, "Assessment failed");
+        if (!res.headers.get("content-type")?.includes("application/x-ndjson")) {
+          throw new Error("The assessment endpoint did not return a progress stream");
         }
-        const first = data?.products?.[0];
+
+        let first: Extract<AssessmentStreamEvent, { type: "complete" }>["products"][number] | undefined;
+        await readNdjsonStream<AssessmentStreamEvent>(res, {
+          signal: controller.signal,
+          onEvent: (event) => {
+            if (event.type === "error") throw new Error(event.error);
+            if (event.type === "progress" && event.productCode === result.code) {
+              setDraftItems((prev) => prev.map((item) => item.code !== result.code ? item : {
+                ...item,
+                sustainabilityProgress: {
+                  stage: event.stage,
+                  status: event.status,
+                  message: event.message,
+                  evidenceCount: event.evidenceCount,
+                  researchRound: event.researchRound,
+                  maxResearchRounds: event.maxResearchRounds,
+                  completedStages: event.completedStages,
+                },
+              }));
+            } else if (event.type === "complete") {
+              first = event.products[0];
+            }
+          },
+        });
+        if (controller.signal.aborted) return;
         const assessment = first?.sustainability_assessment;
-        const hasError = assessment && typeof assessment.error === "string";
+        const hasError = Boolean(assessment && "error" in assessment);
         setDraftItems((prev) =>
           prev.map((item) =>
             item.code !== result.code
@@ -116,11 +149,13 @@ export default function ShoppingListCreatorPage() {
                   sustainability: hasError ? undefined : (assessment as ShoppingListSustainability),
                   sustainabilityLoading: false,
                   sustainabilityError: hasError ? (assessment as { error: string }).error : undefined,
+                  sustainabilityProgress: undefined,
                 }
           )
         );
       })
       .catch((err) => {
+        if (controller.signal.aborted) return;
         const message = err instanceof Error ? err.message : "Assessment failed";
         setDraftItems((prev) =>
           prev.map((item) =>
@@ -129,11 +164,23 @@ export default function ShoppingListCreatorPage() {
               : { ...item, sustainabilityLoading: false, sustainabilityError: message }
           )
         );
+      })
+      .finally(() => {
+        if (assessmentControllersRef.current.get(result.code) === controller) {
+          assessmentControllersRef.current.delete(result.code);
+        }
       });
   }, []);
 
   const removeFromDraft = useCallback((code: string) => {
+    assessmentControllersRef.current.get(code)?.abort();
+    assessmentControllersRef.current.delete(code);
     setDraftItems((prev) => prev.filter((i) => i.code !== code));
+  }, []);
+
+  useEffect(() => () => {
+    for (const controller of assessmentControllersRef.current.values()) controller.abort();
+    assessmentControllersRef.current.clear();
   }, []);
 
   const toggleSelected = useCallback(
@@ -165,6 +212,7 @@ export default function ShoppingListCreatorPage() {
       const body = { ...item };
       delete body.sustainabilityLoading;
       delete body.sustainabilityError;
+      delete body.sustainabilityProgress;
       const res = await authFetch(`/api/shopping-lists/${list.id}/items`, {
         method: "POST",
         body: JSON.stringify(body),
@@ -317,6 +365,7 @@ export default function ShoppingListCreatorPage() {
                             sustainability={item.sustainability ?? null}
                             loading={item.sustainabilityLoading}
                             error={item.sustainabilityError}
+                            progress={item.sustainabilityProgress}
                           />
                         </div>
                         <button

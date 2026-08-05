@@ -1,34 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { ShoppingListSustainability } from "@/lib/shopping-list";
 import { AssessmentProgress } from "@/components/AssessmentProgress";
-import { ASSESSMENT_PROGRESS_STEPS } from "@/hooks/useAnalyzeSustainability";
+import {
+  INITIAL_ASSESSMENT_PROGRESS,
+  type AssessmentProgressState,
+} from "@/hooks/useAnalyzeSustainability";
 
 interface SustainabilityItemScoreProps {
   sustainability: ShoppingListSustainability | null;
   loading?: boolean;
   error?: string | null;
+  progress?: AssessmentProgressState;
 }
 
 function scoreColor(score: number): string {
   if (score >= 80) return "bg-[#0d563f] text-white";
-  if (score >= 60) return "bg-[#d59a12] text-[#111714]";
-  if (score >= 40) return "bg-[#fff4de] text-[#111714]";
+  if (score >= 65) return "bg-[#2148d8] text-white";
+  if (score >= 50) return "bg-[#d59a12] text-[#111714]";
+  if (score >= 35) return "bg-[#fff4de] text-[#111714]";
   return "bg-[#111714] text-white";
+}
+
+function gradeLabel(score: number): string {
+  if (score >= 80) return "A";
+  if (score >= 65) return "B";
+  if (score >= 50) return "C";
+  if (score >= 35) return "D";
+  return "F";
 }
 
 export function SustainabilityItemScore({
   sustainability,
   loading = false,
   error = null,
+  progress = INITIAL_ASSESSMENT_PROGRESS,
 }: SustainabilityItemScoreProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 text-[#111714]">
       {loading && (
-        <LoadingAssessment />
+        <AssessmentProgress progress={progress} variant="compact" />
       )}
       {error && !loading && (
         <span className="border-b-2 border-[#111714] font-mono text-[0.62rem] font-semibold" title={error}>
@@ -48,9 +62,15 @@ export function SustainabilityItemScore({
       {sustainability && !loading && (
         <>
           <span
-            className={`inline-flex items-center border-2 border-[#111714] px-2 py-1 font-mono text-[0.65rem] font-semibold ${scoreColor(sustainability.score)}`}
+            className={`inline-flex items-center border-2 border-[#111714] px-2 py-1 font-mono text-[0.65rem] font-semibold ${
+              typeof sustainability.score === "number"
+                ? scoreColor(sustainability.score)
+                : "bg-[#7a5411] text-white"
+            }`}
           >
-            {sustainability.score}/100
+            {typeof sustainability.score === "number"
+              ? `${gradeLabel(sustainability.score)} / ${sustainability.score}`
+              : "N/A"}
           </span>
           {sustainability.tags && sustainability.tags.length > 0 && (
             <span className="flex flex-wrap items-center gap-1">
@@ -127,18 +147,4 @@ export function SustainabilityItemScore({
       )}
     </div>
   );
-}
-
-function LoadingAssessment() {
-  const [stepIndex, setStepIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStepIndex((i) => (i + 1) % ASSESSMENT_PROGRESS_STEPS.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
-
-  const progressStep = ASSESSMENT_PROGRESS_STEPS[stepIndex] ?? ASSESSMENT_PROGRESS_STEPS[0];
-  return <AssessmentProgress step={progressStep} variant="compact" />;
 }

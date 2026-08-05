@@ -413,10 +413,13 @@ export async function search(
  * Look up a product by barcode in Open Food Facts.
  * Returns null if not found or on error.
  */
-export async function lookupByBarcode(barcode: string): Promise<OffClassificationData | null> {
+export async function lookupByBarcode(
+  barcode: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<OffClassificationData | null> {
   try {
     const url = `${OFF_API_BASE}/product/${barcode}.json?fields=${PRODUCT_FIELDS}`;
-    const res = await fetch(url, fetchOptions);
+    const res = await fetch(url, { ...fetchOptions, signal: options.signal });
 
     if (!res.ok) return null;
 

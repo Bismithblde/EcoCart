@@ -22,10 +22,18 @@ export default function Home() {
   const router = useRouter();
   const { user, logout, isLoading: isAuthLoading } = useAuth();
   const { results, isLoading, error, search } = useSearch();
-  const { analysis, isLoading: isAnalyzing, error: analysisError, progressStep, progressSteps, analyze, clearAnalysis } =
+  const { analysis, isLoading: isAnalyzing, error: analysisError, progress, analyze, cancelAnalysis, clearAnalysis } =
     useAnalyzeSustainability();
-  const { alternatives: betterAlternatives, isLoading: isLoadingAlternatives, error: alternativesError, fetchAlternatives, clearAlternatives } =
-    useBetterAlternatives();
+  const {
+    alternatives: betterAlternatives,
+    isLoading: isLoadingAlternatives,
+    error: alternativesError,
+    progressMessage: alternativesProgress,
+    evaluatedCount,
+    totalCandidates,
+    fetchAlternatives,
+    clearAlternatives,
+  } = useBetterAlternatives();
   const { lists, refetch: refetchLists } = useShoppingLists();
   const [selectedProduct, setSelectedProduct] = useState<SearchResult | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -52,9 +60,17 @@ export default function Home() {
         ingredients: selectedProduct.ingredients,
         ingredients_text: selectedProduct.ingredients,
         ecoscore_grade: selectedProduct.ecoscore_grade,
+        ecoscore_score: selectedProduct.ecoscore_score,
         nutriscore_grade: selectedProduct.nutriscore_grade,
       });
     }
+  };
+
+  const handleQueryChange = () => {
+    if (!selectedProduct && !analysis && !isAnalyzing && betterAlternatives.length === 0) return;
+    clearAnalysis();
+    clearAlternatives();
+    setSelectedProduct(null);
   };
 
   const handleSelectProduct = (item: SearchResult) => {
@@ -64,7 +80,12 @@ export default function Home() {
   };
 
   const handleFindBetterAlternatives = () => {
-    if (selectedProduct && analysis && analysis.productCode === selectedProduct.code) {
+    if (
+      selectedProduct &&
+      analysis &&
+      typeof analysis.ecoScore === "number" &&
+      analysis.productCode === selectedProduct.code
+    ) {
       fetchAlternatives(
         {
           code: selectedProduct.code ?? "",
@@ -73,7 +94,8 @@ export default function Home() {
           categories: selectedProduct.categories,
         },
         6,
-        analysis.ecoScore
+        analysis.ecoScore,
+        analysis.scoreMode,
       );
     }
   };
@@ -93,6 +115,8 @@ export default function Home() {
               better_alternatives: a.better_alternatives,
               tags: a.tags,
               confidence: a.confidence,
+              dimensions: a.dimensions,
+              evidence: a.evidence,
               sources: a.sources,
               assessment_version: a.assessment_version,
               assessed_at: a.assessed_at,
@@ -146,7 +170,11 @@ export default function Home() {
             </div>
 
             <div className="border-2 border-[#111714] bg-[#fffdf5] p-4 sm:p-7">
-              <ProductInput onSubmit={handleProductSubmit} isLoading={isLoading} />
+              <ProductInput
+                onSubmit={handleProductSubmit}
+                onQueryChange={handleQueryChange}
+                isLoading={isLoading}
+              />
 
               {error && (
                 <div className="mt-6 border-2 border-[#111714] bg-[#fff4de] p-4">
@@ -220,7 +248,7 @@ export default function Home() {
                     >
                       {isAnalyzing && (
                         <svg
-                          className="animate-spin h-4 w-4"
+                          className="h-4 w-4 motion-safe:animate-spin motion-reduce:animate-none"
                           xmlns="http://www.w3.org/2000/svg"
                           fill="none"
                           viewBox="0 0 24 24"
@@ -240,13 +268,18 @@ export default function Home() {
                           />
                         </svg>
                       )}
-                      {isAnalyzing ? progressStep : "Analyze Sustainability"}
+                      {isAnalyzing ? progress.message : "Analyze Sustainability"}
                     </button>
                   </div>
 
                   {isAnalyzing && (
                     <div className="mt-4">
-                      <AssessmentProgress step={progressStep} steps={progressSteps} variant="full" />
+                      <AssessmentProgress
+                        progress={progress}
+                        productName={selectedProduct.product_name}
+                        onCancel={cancelAnalysis}
+                        variant="full"
+                      />
                     </div>
                   )}
 
@@ -262,13 +295,20 @@ export default function Home() {
                       <SustainabilityDashboard
                         productName={analysis.productName}
                         ecoScore={analysis.ecoScore}
+                        grade={analysis.grade}
+                        scoreMode={analysis.scoreMode}
+                        confidencePercent={analysis.confidencePercent}
+                        scoreExplanation={analysis.scoreExplanation}
+                        scoreBasis={analysis.scoreBasis}
+                        status={analysis.status}
                         verdict={analysis.verdict}
                         reasoning={analysis.reasoning}
                         tags={analysis.tags}
                         confidence={analysis.confidence}
+                        dimensions={analysis.dimensions}
+                        evidence={analysis.evidence}
                         sources={analysis.sources}
                         assessedAt={analysis.assessedAt}
-                        metrics={analysis.metrics}
                       />
 
                       <div className="border-2 border-[#111714] bg-[#fffdf5] p-5 sm:p-6">
@@ -276,7 +316,7 @@ export default function Home() {
                           <h3 className="text-2xl font-semibold tracking-[-0.04em]">
                             Better Alternatives
                           </h3>
-                          <button
+                          {typeof analysis.ecoScore === "number" ? <button
                             type="button"
                             onClick={handleFindBetterAlternatives}
                             disabled={isLoadingAlternatives}
@@ -284,20 +324,25 @@ export default function Home() {
                           >
                             {isLoadingAlternatives ? (
                               <>
-                                <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg className="h-3.5 w-3.5 motion-safe:animate-spin motion-reduce:animate-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                 </svg>
-                                Finding…
+                                {alternativesProgress || "Finding"}
                               </>
                             ) : (
                               "Find similar & more sustainable"
                             )}
-                          </button>
+                          </button> : null}
                         </div>
                         {alternativesError && (
                           <p className="mb-3 border-2 border-[#111714] bg-[#fff4de] p-3 text-sm">{alternativesError}</p>
                         )}
+                        {isLoadingAlternatives && totalCandidates > 0 ? (
+                          <p className="mb-3 font-mono text-[0.62rem] font-semibold text-[#0d563f]">
+                            {evaluatedCount} / {totalCandidates} CANDIDATES CHECKED
+                          </p>
+                        ) : null}
                         {betterAlternatives.length > 0 ? (
                           <div className="space-y-3">
                             {betterAlternatives.map((alt) => {
@@ -317,7 +362,7 @@ export default function Home() {
                                 <BetterChoiceCard
                                   key={alt.product.code}
                                   currentProduct={analysis.productName}
-                                  currentScore={analysis.ecoScore}
+                                  currentScore={analysis.ecoScore as number}
                                   betterProduct={alt.product.product_name}
                                   betterBrand={alt.product.brands}
                                   betterScore={a.score}
@@ -332,14 +377,14 @@ export default function Home() {
                               );
                             })}
                           </div>
-                        ) : analysis.alternatives && analysis.alternatives.length > 0 ? (
+                        ) : typeof analysis.ecoScore === "number" && analysis.alternatives && analysis.alternatives.length > 0 ? (
                           <div className="space-y-3">
                             <p className="mb-2 font-mono text-[0.65rem] font-semibold">AI SUGGESTIONS</p>
                             {analysis.alternatives.map((alt, index) => (
                               <BetterChoiceCard
                                 key={index}
                                 currentProduct={analysis.productName}
-                                currentScore={analysis.ecoScore}
+                                currentScore={analysis.ecoScore as number}
                                 betterProduct={alt.name}
                                 betterScore={alt.ecoScore}
                                 improvement={alt.improvement}
@@ -348,7 +393,7 @@ export default function Home() {
                           </div>
                         ) : (
                           <p className="text-sm text-[#4c514b]">
-                            Click &quot;Find similar & more sustainable&quot; to get alternatives from similar products ranked by sustainability.
+                            Find comparable products after reviewing the primary assessment.
                           </p>
                         )}
                       </div>

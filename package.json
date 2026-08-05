@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsc -p tsconfig.test.json && node --test .test-dist/tests/sustainability-contract.test.js",
     "filter-csv-usa": "node scripts/filter-csv-usa.js",
     "trim-csv-100k": "node scripts/trim-csv-to-100k.js",
     "trim-csv-200k": "node scripts/trim-csv-to-200k.js",

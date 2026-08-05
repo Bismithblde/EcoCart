@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assessProduct, type ProductSummary } from "@/lib/sustainability-agent";
+import {
+  AssessmentDeadlineError,
+  assessProduct,
+  type ProductSummary,
+} from "@/lib/sustainability-agent";
 import { authorizeAiRequest } from "@/lib/ai-request-guard";
+import type { AssessmentStreamEvent } from "@/lib/sustainability-types";
 
 const MAX_PRODUCTS = 3;
 
@@ -17,7 +22,8 @@ function checkOpenAIKey(): void {
  * Open Food Facts (get_product_details) for more data. Requires OPENAI_API_KEY.
  *
  * Body: { products: Array<{ code, product_name?, brands?, ... }> }
- * Returns: { products: [...] } with sustainability_assessment on each item.
+ * Streams NDJSON progress events and ends with a complete event containing
+ * products and their sustainability assessments.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -51,6 +57,10 @@ export async function POST(request: NextRequest) {
         categories: typeof o.categories === "string" ? o.categories : undefined,
         nutriscore_grade: typeof o.nutriscore_grade === "string" ? o.nutriscore_grade : undefined,
         ecoscore_grade: typeof o.ecoscore_grade === "string" ? o.ecoscore_grade : undefined,
+        ecoscore_score:
+          typeof o.ecoscore_score === "number" && Number.isFinite(o.ecoscore_score)
+            ? o.ecoscore_score
+            : undefined,
         ingredients_text:
           typeof o.ingredients_text === "string"
             ? o.ingredients_text
@@ -84,22 +94,80 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const results = await Promise.all(
-      products.map(async (product) => {
-        try {
-          const assessment = await assessProduct(product);
-          return { ...product, sustainability_assessment: assessment };
-        } catch (err) {
-          const message = err instanceof Error ? err.message : "Assessment failed";
-          return {
-            ...product,
-            sustainability_assessment: { error: message } as { error: string },
-          };
-        }
-      })
-    );
+    const encoder = new TextEncoder();
+    const workflowController = new AbortController();
+    let closed = false;
+    const abortFromRequest = () => workflowController.abort(request.signal.reason);
+    if (request.signal.aborted) abortFromRequest();
+    else request.signal.addEventListener("abort", abortFromRequest, { once: true });
 
-    return NextResponse.json({ products: results });
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const send = (event: AssessmentStreamEvent) => {
+          if (closed || workflowController.signal.aborted) return;
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        };
+
+        void (async () => {
+          try {
+            const results = await Promise.all(
+              products.map(async (product) => {
+                try {
+                  const assessment = await assessProduct(product, {
+                    signal: workflowController.signal,
+                    onProgress: send,
+                  });
+                  return { ...product, sustainability_assessment: assessment };
+                } catch (error) {
+                  const message =
+                    error instanceof Error ? error.message : "Assessment failed";
+                  return {
+                    ...product,
+                    sustainability_assessment: { error: message },
+                  };
+                }
+              }),
+            );
+            send({ type: "complete", products: results });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "Assessment stream failed";
+            send({
+              type: "error",
+              error: message,
+              code:
+                error instanceof AssessmentDeadlineError
+                  ? "deadline_exceeded"
+                  : "stream_failed",
+            });
+          } finally {
+            request.signal.removeEventListener("abort", abortFromRequest);
+            if (!closed) {
+              closed = true;
+              try {
+                controller.close();
+              } catch {
+                // The browser may have already cancelled the stream.
+              }
+            }
+          }
+        })();
+      },
+      cancel(reason) {
+        closed = true;
+        workflowController.abort(reason);
+        request.signal.removeEventListener("abort", abortFromRequest);
+      },
+    });
+
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store, no-transform",
+        "X-Content-Type-Options": "nosniff",
+        "X-Accel-Buffering": "no",
+      },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     const status =
